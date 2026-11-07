@@ -28,15 +28,22 @@ DEF_RE = re.compile(r"(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 
 def parse_patch(patch: str) -> list[dict]:
-    """Split a unified diff into files and hunks (removed/added/context lines)."""
+    """Split a unified diff into files and hunks (removed/added/context lines).
+
+    A `--- ` line followed by `+++ ` starts a new file even inside a hunk: patches without
+    `diff --git` lines would otherwise read the next file's headers as removed/added code.
+    """
     files: list[dict] = []
     cur = None
     hunk = None
     old_path = None
-    for line in patch.splitlines():
+    lines = patch.splitlines()
+    for i, line in enumerate(lines):
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
         if line.startswith("diff --git"):
             cur, hunk, old_path = None, None, None
-        elif line.startswith("--- ") and hunk is None:
+        elif line.startswith("--- ") and (hunk is None or nxt.startswith("+++ ")):
+            hunk = None
             old_path = line[4:].strip()
         elif line.startswith("+++ ") and hunk is None:
             new_path = line[4:].strip()
@@ -83,11 +90,17 @@ def map_hunk(hunk: dict, nodes: list[dict], modules: list[str]) -> list[str]:
     size = {n["id"]: len(n.get("text") or "") for n in pool}
     remaining = _norm(hunk["removed"])
     picked: list[str] = []
+    hdr = DEF_RE.search(hunk["ctx"] or "")
+    hdr_name = "." + hdr.group(1) if hdr else None
     while remaining:
-        scored = [(-len(remaining & texts[i]), size[i], i) for i in texts if remaining & texts[i]]
+        scored = [
+            (-len(remaining & texts[i]), 0 if hdr_name and i.endswith(hdr_name) else 1, size[i], i)
+            for i in texts
+            if remaining & texts[i]
+        ]
         if not scored:
             break
-        _, _, best = min(scored)
+        best = min(scored)[3]
         covered = remaining & texts[best]
         if picked and not any(len(x) >= 8 for x in covered):
             break

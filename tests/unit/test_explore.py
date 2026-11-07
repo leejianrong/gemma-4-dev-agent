@@ -137,3 +137,44 @@ def test_missing_graph_is_reported_not_fatal(tmp_path):
 def test_missing_tasks_file_fails_loudly(tmp_path):
     (tmp_path / "d").mkdir()
     assert explore.main(["x", str(tmp_path / "d"), str(tmp_path / "o")]) == 2
+
+
+NO_GIT_HEADER = """--- a/pkg/mod.py
++++ b/pkg/mod.py
+@@ -1,2 +1,2 @@ def alpha(x)
+ def alpha(x):
+-    return x + 1
++    return x + 2
+--- a/pkg/other.py
++++ b/pkg/other.py
+@@ -1,2 +1,2 @@ def gamma()
+ def gamma():
+-    return 1
++    return 3
+"""
+
+
+def test_multi_file_patch_without_diff_git_lines_keeps_files_separate():
+    files = explore.parse_patch(NO_GIT_HEADER)
+    assert [f["path"] for f in files] == ["pkg/mod.py", "pkg/other.py"]
+    assert files[0]["hunks"][0]["removed"] == ["    return x + 1"]
+    assert files[1]["hunks"][0]["removed"] == ["    return 1"]
+    for f in files:
+        for h in f["hunks"]:
+            assert not any(
+                x.startswith("-") or x.startswith("++") for x in h["removed"] + h["added"]
+            )
+
+
+def test_header_function_breaks_ties_between_nodes_sharing_a_line():
+    nodes = [
+        {"id": "pkg.mod.aaa", "text": "def aaa():\n    return shared_value + 1\n"},
+        {"id": "pkg.mod.bbb", "text": "def bbb():\n    return shared_value + 1\n"},
+    ]
+    hunk = {
+        "ctx": "def bbb():",
+        "removed": ["    return shared_value + 1"],
+        "added": [],
+        "context": [],
+    }
+    assert explore.map_hunk(hunk, nodes, ["pkg.mod"]) == ["pkg.mod.bbb"]

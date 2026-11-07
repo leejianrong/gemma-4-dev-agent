@@ -56,7 +56,7 @@ def kernel_main() -> None:
         preflight()
         stage("analyze")
         OUTD.mkdir(parents=True, exist_ok=True)
-        rc = main(["x", str(DATA), str(OUTD)])
+        rc = __ENTRY__
         if rc != 0:
             raise SystemExit(f"ERROR explore returned {rc}")
         stage("done")
@@ -81,17 +81,29 @@ kernel_main()
 """
 
 
-def build(username: str) -> Path:
-    src = (ROOT / "pod" / "explore.py").read_text(encoding="utf-8")
-    src = re.sub(
-        r'\nif __name__ == "__main__":\n    raise SystemExit\(main\(sys\.argv\)\)\n?$', "\n", src
-    )
-    assert "__main__" not in src, "explore.py main guard not stripped"
+GUARD_RE = re.compile(r'\nif __name__ == "__main__":\n    raise SystemExit\(\w+\(sys\.argv\)\)\n?$')
+
+
+def _inline(name: str) -> str:
+    src = GUARD_RE.sub("\n", (ROOT / "pod" / name).read_text(encoding="utf-8"))
+    assert "__main__" not in src, f"{name} main guard not stripped"
+    return src
+
+
+def build(username: str, kind: str = "explore") -> Path:
+    global OUT, SLUG
+    src = _inline("explore.py")
+    entry = 'main(["x", str(DATA), str(OUTD)])'
+    if kind == "audit":
+        OUT = Path(__file__).resolve().parent / "audit_kernel"
+        SLUG = "gemma-4-graph-audit"
+        src += "\n" + _inline("audit.py").replace("from __future__ import annotations\n", "")
+        entry = "audit_main()"
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "kernel.py").write_text(src + WRAPPER, encoding="utf-8")
+    (OUT / "kernel.py").write_text(src + WRAPPER.replace("__ENTRY__", entry), encoding="utf-8")
     meta = {
         "id": f"{username}/{SLUG}",
-        "title": "Gemma 4 Graph Explore",
+        "title": "Gemma 4 Graph Explore" if SLUG.endswith("explore") else "Gemma 4 Graph Audit",
         "code_file": "kernel.py",
         "language": "python",
         "kernel_type": "script",
@@ -109,4 +121,4 @@ def build(username: str) -> Path:
 
 
 if __name__ == "__main__":
-    print(build(sys.argv[1]))
+    print(build(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "explore"))

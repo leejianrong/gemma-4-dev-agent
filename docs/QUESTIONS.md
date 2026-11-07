@@ -56,3 +56,5 @@ Note: the Status column for F1-F6 is DECIDED; answers are in the last column and
 | Measurable success | F6, A9, A18 |
 | Security and secrets | A10, R6 |
 | Versioning and migration | A11 (tag each submission with score) |
+| A23 | Data | Public set: fastapi 67, rich 48, requests 13, httpx 1 tasks; graphs have only `calls` edges (452k) and nodes carry `id`/`name`/`text` with no line numbers; no task has hints text; embeddings are 256-d and cover every node | DECIDED | measured on Kaggle (CPU kernel), ADR-0005 |
+| A24 | Method | Text-based diff-to-node mapping: after fixing a patch-parser bug (multi-file patches without `diff --git` lines) 67% of hunks map and hand-graded precision is about 70% (15 of 21). Not good enough to publish. Next: map by old-file line numbers using the snapshots (read inside Kaggle) and `ast`, restrict targets to library code (exclude docs_src/, scripts/, tests/), and report per task not per pair (one task maps 125 nodes) | ASSUMED | audit in `pod/audit.py`, `make kernel` |
