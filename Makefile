@@ -57,3 +57,11 @@ kernel-map: ## Build the Kaggle gold-patch mapping kernel from pod/gold_map.py
 pull-map: ## Download the mapping kernel output into data/map/ (gold_nodes.csv, gold_hunks.csv, report)
 	mkdir -p data/map
 	kaggle kernels output "$(KAGGLE_USER)/gemma-4-gold-map" -p data/map --force
+
+.PHONY: kernel-localize pull-localize
+kernel-localize: ## Build the Kaggle localization-baselines kernel (re-derives gold nodes first)
+	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" localize
+
+pull-localize: ## Download the localization kernel output into data/localize/
+	mkdir -p data/localize
+	kaggle kernels output "$(KAGGLE_USER)/gemma-4-localize" -p data/localize --force

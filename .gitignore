@@ -30,3 +30,4 @@ kaggle/eda_kernel/
 # Generated figures (publishing them depends on the competition data terms)
 figures/
 kaggle/map_kernel/
+kaggle/localize_kernel/
