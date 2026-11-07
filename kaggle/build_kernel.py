@@ -112,6 +112,13 @@ KINDS = {
         ["eda_extract.py"],
         "eda_main()",
     ),
+    "map": (
+        "gemma-4-gold-map",
+        "Gemma 4 Gold Map",
+        "map_kernel",
+        ["gold_map.py"],
+        "gm_main()",
+    ),
 }
 TITLE = "Gemma 4 Graph Explore"
 

@@ -49,3 +49,11 @@ eda: ## Regenerate every EDA figure into figures/eda/ from data/eda/
 pull-eda: ## Download the EDA kernel output into data/eda/ (small CSVs, no competition files)
 	mkdir -p data/eda
 	kaggle kernels output "$(KAGGLE_USER)/gemma-4-eda-extract" -p data/eda --force
+
+.PHONY: kernel-map pull-map
+kernel-map: ## Build the Kaggle gold-patch mapping kernel from pod/gold_map.py
+	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" map
+
+pull-map: ## Download the mapping kernel output into data/map/ (gold_nodes.csv, gold_hunks.csv, report)
+	mkdir -p data/map
+	kaggle kernels output "$(KAGGLE_USER)/gemma-4-gold-map" -p data/map --force
