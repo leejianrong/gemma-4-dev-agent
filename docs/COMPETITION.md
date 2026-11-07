@@ -185,8 +185,11 @@ mounts them at `/kaggle/input/competitions/gemma-4-developer-agent/`):
 - Graphs contain only `calls` edges (452,588 in total). Nodes carry **no line numbers**.
 - Embeddings cover every graph node. Every public task has a graph and embeddings.
 - `hints_text` is empty for all 129 public tasks.
-- Mapping a gold patch to graph nodes by text matching is about 70% precise (hand-checked); a
-  line-number-based mapping is planned (`QUESTIONS.md` A24).
+- **The graph has no `async def` nodes.** 0 of 239 async functions in the files touched by gold
+  patches have a node, against 4,646 of 4,646 sync ones (`QUESTIONS.md` A27). Node text drops
+  decorators and trailing comments, and class nodes hold only the header.
+- Gold patches map onto graph nodes exactly by old-file line numbers (`pod/gold_map.py`,
+  `QUESTIONS.md` A24); text matching of removed lines was only about 70% precise.
 
 How the tasks were built (dataset page): mined commits that change both library code and tests;
 matched each to its issue; dropped mechanical refactors, docs-only and ambiguous changes; verified

@@ -23,7 +23,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@\s*(.*)$")
+HUNK_RE = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@\s*(.*)$")
 DEF_RE = re.compile(r"(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 
@@ -52,15 +52,44 @@ def parse_patch(patch: str) -> list[dict]:
             cur = {"path": path, "hunks": []}
             files.append(cur)
         elif cur is not None and (m := HUNK_RE.match(line)):
-            hunk = {"ctx": m.group(1), "removed": [], "added": [], "context": []}
+            old_count = 1 if m.group(2) is None else int(m.group(2))
+            new_count = 1 if m.group(4) is None else int(m.group(4))
+            hunk = {
+                "ctx": m.group(5),
+                "removed": [],
+                "added": [],
+                "context": [],
+                "old_start": int(m.group(1)),
+                "old_count": old_count,
+                "new_start": int(m.group(3)),
+                "new_count": new_count,
+                "lines": [],  # ordered (kind, text) with kind in " ", "-", "+"
+                "_old_left": old_count,
+                "_new_left": new_count,
+            }
             cur["hunks"].append(hunk)
         elif hunk is not None:
+            if line.startswith("\\"):  # "\ No newline at end of file"
+                continue
+            if line == "" and (hunk["_old_left"] > 0 or hunk["_new_left"] > 0):
+                line = " "  # a blank context line whose leading space was stripped
             if line.startswith("-"):
                 hunk["removed"].append(line[1:])
+                hunk["lines"].append(("-", line[1:]))
+                hunk["_old_left"] -= 1
             elif line.startswith("+"):
                 hunk["added"].append(line[1:])
+                hunk["lines"].append(("+", line[1:]))
+                hunk["_new_left"] -= 1
             elif line.startswith(" "):
                 hunk["context"].append(line[1:])
+                hunk["lines"].append((" ", line[1:]))
+                hunk["_old_left"] -= 1
+                hunk["_new_left"] -= 1
+    for f in files:
+        for h in f["hunks"]:
+            h.pop("_old_left", None)
+            h.pop("_new_left", None)
     return files
 
 
