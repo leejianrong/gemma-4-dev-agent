@@ -5,7 +5,10 @@ from __future__ import annotations
 import importlib
 import sys
 
-FIGURE_MODULES: list[str] = ["eda_inventory"]  # appended by each figure card, in reading order
+FIGURE_MODULES: list[str] = [  # appended by each figure card, in reading order
+    "eda_inventory",
+    "eda_patch_anatomy",
+]
 
 
 def main() -> int:
