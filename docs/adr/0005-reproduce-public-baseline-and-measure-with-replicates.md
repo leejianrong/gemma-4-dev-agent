@@ -15,7 +15,8 @@ repos, so overfitting to the public repos is a real risk. Other notebooks have n
 - Identify every experiment by the zip's SHA-256 and record it in `experiments/runs.csv`.
 - Change one thing per variant. Replicate each variant at least twice.
 - Hold out one public repo; accept a change only if it gains ≥3 tasks there and does not lose
-  elsewhere.
+  elsewhere. The public set is fastapi 67, rich 48, requests 13 and httpx 1 tasks, so the held-out
+  repo is **rich** (httpx has one task and requests 13, too few to detect a 3-task gain).
 
 ## Alternatives considered
 

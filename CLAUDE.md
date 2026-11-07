@@ -6,6 +6,8 @@ agent. Score = % of ~120 hidden SWE-style tasks whose patch passes hidden pytest
 Final deadline 2026-12-02; entry/merge 2026-11-25; paper (Kaggle Writeup, <=3,000 words) 2026-11-12 23:59 UTC. Planning state: `docs/QUESTIONS.md`
 Plan: `docs/PLAN.md`, slices: `docs/SLICES.md`, decisions: `docs/adr/`. Start at slice V1.
 
+Competition rules, scoring, harness limits, dataset and dates: `docs/COMPETITION.md` (read it first).
+
 ## Status: trust the code over the docs
 Scaffold only. `submission/agent.yaml` is a placeholder from data/HARNESS_README.md (Kaggle docs, gitignored) and has never
 run through `adk_submission`. Nothing has been scored.

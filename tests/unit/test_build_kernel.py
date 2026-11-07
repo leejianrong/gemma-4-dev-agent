@@ -54,3 +54,14 @@ def test_too_few_files_is_rejected(kernel, tmp_path):
     fixture.main(tmp_path / "d")
     r = run(kernel, tmp_path / "d", tmp_path / "o", MIN_FILES="500")
     assert r.returncode == 1 and "too few files" in r.stdout + r.stderr
+
+
+def test_audit_kernel_runs_and_writes_the_audit(tmp_path, monkeypatch):
+    monkeypatch.setattr(build_kernel, "OUT", tmp_path / "k")
+    monkeypatch.setattr(build_kernel, "SLUG", build_kernel.SLUG)
+    path = build_kernel.build("someone", "audit")
+    fixture.main(tmp_path / "d")
+    r = run(path, tmp_path / "d", tmp_path / "o")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "## Hunk outcomes over all tasks" in r.stdout
+    assert (tmp_path / "o" / "audit.md").is_file()
