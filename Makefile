@@ -65,3 +65,11 @@ kernel-localize: ## Build the Kaggle localization-baselines kernel (re-derives g
 pull-localize: ## Download the localization kernel output into data/localize/
 	mkdir -p data/localize
 	kaggle kernels output "$(KAGGLE_USER)/gemma-4-localize" -p data/localize --force
+
+.PHONY: kernel-cochange pull-cochange
+kernel-cochange: ## Build the Kaggle co-change kernel (re-derives gold nodes first)
+	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" cochange
+
+pull-cochange: ## Download the co-change kernel output into data/cochange/
+	mkdir -p data/cochange
+	kaggle kernels output "$(KAGGLE_USER)/gemma-4-cochange" -p data/cochange --force
