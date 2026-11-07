@@ -1,4 +1,5 @@
 """Build a tiny fake competition tree: tasks.jsonl, graphs/, embeddings/, listing.csv."""
+
 import json
 import sys
 import zipfile
@@ -12,7 +13,9 @@ PATCH = """diff --git a/pkg/mod.py b/pkg/mod.py
 -    return x + 1
 +    return x + 2
 """
-NODES = [{"id": "pkg.mod.alpha", "name": "pkg.mod.alpha", "text": "def alpha(x):\n    return x + 1\n"}]
+NODES = [
+    {"id": "pkg.mod.alpha", "name": "pkg.mod.alpha", "text": "def alpha(x):\n    return x + 1\n"}
+]
 
 
 def npy():
@@ -26,12 +29,21 @@ def main(root: Path, n: int = 5) -> None:
     tasks = []
     for i in range(n):
         sha = f"{i:040x}"
-        edges = [{"source": "pkg.mod.alpha", "target": "pkg.mod.alpha", "type": "calls", "key": 0}]
-        (root / "graphs" / f"pkg_{sha}.json").write_text(json.dumps({"nodes": NODES, "edges": edges}))
+        edge = {"source": "pkg.mod.alpha", "target": "pkg.mod.alpha", "type": "calls", "key": 0}
+        graph = json.dumps({"nodes": NODES, "edges": [edge]})
+        (root / "graphs" / f"pkg_{sha}.json").write_text(graph)
         with zipfile.ZipFile(root / "embeddings" / f"pkg_{sha}.npz", "w") as zf:
             zf.writestr("pkg.mod.alpha.npy", npy())
-        tasks.append({"instance_id": f"pkg_{i}", "repo": "o/pkg", "base_commit": sha, "patch": PATCH,
-                      "problem_statement": "alpha is wrong", "hints_text": ""})
+        tasks.append(
+            {
+                "instance_id": f"pkg_{i}",
+                "repo": "o/pkg",
+                "base_commit": sha,
+                "patch": PATCH,
+                "problem_statement": "alpha is wrong",
+                "hints_text": "",
+            }
+        )
     (root / "tasks.jsonl").write_text("\n".join(json.dumps(t) for t in tasks) + "\n")
     rows = ["name,size,creationDate"]
     for p in sorted(root.rglob("*")):
