@@ -11,6 +11,8 @@ Outputs (OUT_DIR):
   edited_nodes.csv    text-mapped edited nodes with degree and percentile (approximate mapping)
   emb_nn.csv          embedding kNN agreement with call-graph neighbours/parents vs random
   emb_sample.csv.gz   a sample of raw vectors for local PCA / t-SNE
+  emb_dups.csv        per graph: nodes sharing an identical vector, and how the groups relate
+  emb_dup_examples.csv up to 3 example duplicate groups per graph
   report.json         row counts and byte sizes
 Usage: eda_extract.py DATA_DIR OUT_DIR
 """
@@ -165,6 +167,50 @@ def eda_largest_component(ids: list[str], adj: dict[str, set[str]]) -> int:
     return best
 
 
+def eda_duplicates(np, ids: list[str], mat, nodes: list[dict], stem: str, repo: str):
+    """Group nodes with an identical vector (to 5 decimals) and say how each group is related."""
+    text = {n["id"]: (n.get("text") or "").strip() for n in nodes}
+    groups: dict[bytes, list[str]] = collections.defaultdict(list)
+    rounded = np.round(mat, 5)
+    for i, row in zip(ids, rounded, strict=True):
+        groups[row.tobytes()].append(i)
+    dup = [g for g in groups.values() if len(g) > 1]
+    rel = collections.Counter()
+    examples = []
+    for g in dup:
+        parent_child = any(a != b and a.startswith(b + ".") for a in g for b in g)
+        siblings = len({eda_parent(i) for i in g}) == 1
+        relation = "parent_child" if parent_child else ("siblings" if siblings else "unrelated")
+        same_text = len({text[i] for i in g}) == 1
+        rel[relation] += 1
+        rel["identical_text"] += int(same_text)
+        if len(examples) < 3:
+            examples.append(
+                {
+                    "stem": stem,
+                    "repo": repo,
+                    "group_size": len(g),
+                    "relation": relation,
+                    "identical_text": int(same_text),
+                    "node_ids": ";".join(sorted(g))[:220],
+                }
+            )
+    summary = {
+        "stem": stem,
+        "repo": repo,
+        "n_nodes": len(ids),
+        "unique_vectors": len(groups),
+        "nodes_in_duplicate_groups": sum(len(g) for g in dup),
+        "duplicate_groups": len(dup),
+        "largest_group": max((len(g) for g in dup), default=1),
+        "groups_identical_text": rel["identical_text"],
+        "groups_parent_child": rel["parent_child"],
+        "groups_siblings": rel["siblings"],
+        "groups_unrelated": rel["unrelated"],
+    }
+    return summary, examples
+
+
 def eda_embeddings(
     np,
     path: Path,
@@ -182,10 +228,10 @@ def eda_embeddings(
         keys = set(z.files)
         ids = [n["id"] for n in nodes if n["id"] in keys]
         if len(ids) < 4:
-            return [], [], []
+            return [], [], [], None
         mat = np.stack([z[i] for i in ids]).astype(np.float32)
     except (OSError, ValueError, zipfile.BadZipFile):
-        return [], [], []
+        return [], [], [], None
     norms = np.linalg.norm(mat, axis=1)
     unit = mat / np.maximum(norms[:, None], 1e-9)
     n = len(ids)
@@ -225,7 +271,9 @@ def eda_embeddings(
         )
     chosen = rng.sample(range(n), min(n_sample, n))
     sample = [(ids[j], [f"{x:.4f}" for x in mat[j]]) for j in chosen]
-    return rows, sample, ids
+    stem = path.stem
+    repo = ""
+    return rows, sample, ids, eda_duplicates(np, ids, mat, nodes, stem, repo)
 
 
 def eda_write(path: Path, rows: list[dict]) -> int:
@@ -255,6 +303,7 @@ def eda_run(data: Path, out: Path) -> dict:
         by_stem[f"{t['instance_id'].rsplit('_', 1)[0]}_{t['base_commit']}"].append(t)
     task_rows = [eda_task_row(t, data / "snapshots") for t in tasks]
     hunk_rows, graph_rows, edited_rows, nn_rows = [], [], [], []
+    dup_rows, dup_examples = [], []
     emb_sample: list[list] = []
     n_node_rows = 0
     with gzip.open(out / "node_degrees.csv.gz", "wt", newline="", encoding="utf-8") as gz:
@@ -319,9 +368,12 @@ def eda_run(data: Path, out: Path) -> dict:
                 edited_here |= set(mapped)
             if np is not None:
                 rng = random.Random(stem)
-                rows, sample, _ = eda_embeddings(
+                rows, sample, _, dups = eda_embeddings(
                     np, data / "embeddings" / f"{stem}.npz", nodes, adj, edited_here, rng
                 )
+                if dups:
+                    dup_rows.append({**dups[0], "stem": stem, "repo": repo})
+                    dup_examples += [{**e, "stem": stem, "repo": repo} for e in dups[1]]
                 for r in rows:
                     nn_rows.append({"stem": stem, "repo": repo, **r})
                 for nid, vec in sample:
@@ -335,6 +387,8 @@ def eda_run(data: Path, out: Path) -> dict:
         "node_degrees.csv.gz": n_node_rows,
         "edited_nodes.csv": eda_write(out / "edited_nodes.csv", edited_rows),
         "emb_nn.csv": eda_write(out / "emb_nn.csv", nn_rows),
+        "emb_dups.csv": eda_write(out / "emb_dups.csv", dup_rows),
+        "emb_dup_examples.csv": eda_write(out / "emb_dup_examples.csv", dup_examples),
     }
     with gzip.open(out / "emb_sample.csv.gz", "wt", newline="", encoding="utf-8") as gz:
         w = csv.writer(gz)

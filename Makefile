@@ -48,4 +48,4 @@ eda: ## Regenerate every EDA figure into figures/eda/ from data/eda/
 
 pull-eda: ## Download the EDA kernel output into data/eda/ (small CSVs, no competition files)
 	mkdir -p data/eda
-	kaggle kernels output "$(KAGGLE_USER)/gemma-4-eda-extract" -p data/eda
+	kaggle kernels output "$(KAGGLE_USER)/gemma-4-eda-extract" -p data/eda --force

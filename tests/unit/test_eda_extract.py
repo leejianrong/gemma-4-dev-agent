@@ -90,10 +90,36 @@ def test_embedding_knn_agreement_against_random_baseline(tmp_path):
     nodes = [{"id": i} for i in ids]
     import random
 
-    nn, sample, got = eda_extract.eda_embeddings(
+    nn, sample, got, dups = eda_extract.eda_embeddings(
         np, path, nodes, adj, {ids[0]}, random.Random(1), k=3, n_query=12
     )
     row = next(r for r in nn if r["is_edited"] == 1)
     assert row["hits_1hop"] == 1 and row["degree"] == 1 and row["k"] == 3
     assert row["expected_1hop"] == pytest.approx(3 * 1 / 11, abs=1e-3)
     assert len(sample) == 12 and len(sample[0][1]) == 256 and len(got) == 12
+    assert dups[0]["duplicate_groups"] == 0 and dups[0]["unique_vectors"] == 12
+
+
+def test_duplicate_vectors_are_grouped_and_classified():
+    np = pytest.importorskip("numpy")
+    rng = np.random.default_rng(1)
+    v = {k: rng.normal(size=256).astype("float32") for k in "abcd"}
+    ids = [
+        "pkg.mod.Klass",  # parent of the next node: shares a vector with it
+        "pkg.mod.Klass.run",
+        "pkg.mod.one",  # siblings with identical text
+        "pkg.mod.two",
+        "pkg.x.alpha",  # unrelated pair
+        "pkg.y.beta",
+        "pkg.mod.solo",
+    ]
+    vecs = [v["a"], v["a"], v["b"], v["b"], v["c"], v["c"], v["d"]]
+    mat = np.stack(vecs)
+    text = {"pkg.mod.one": "def f(): pass", "pkg.mod.two": "def f(): pass"}
+    nodes = [{"id": i, "text": text.get(i, f"body of {i}")} for i in ids]
+    summary, examples = eda_extract.eda_duplicates(np, ids, mat, nodes, "stem", "o/pkg")
+    assert summary["unique_vectors"] == 4 and summary["duplicate_groups"] == 3
+    assert summary["nodes_in_duplicate_groups"] == 6 and summary["largest_group"] == 2
+    assert summary["groups_parent_child"] == 1 and summary["groups_siblings"] == 1
+    assert summary["groups_unrelated"] == 1 and summary["groups_identical_text"] == 1
+    assert {e["relation"] for e in examples} == {"parent_child", "siblings", "unrelated"}

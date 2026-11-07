@@ -8,6 +8,7 @@ import sys
 FIGURE_MODULES: list[str] = [  # appended by each figure card, in reading order
     "eda_inventory",
     "eda_patch_anatomy",
+    "eda_embeddings",
 ]
 
 
