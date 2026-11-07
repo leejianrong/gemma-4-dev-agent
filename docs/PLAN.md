@@ -4,7 +4,7 @@ Status: agreed (2026-11-07) · Milestone: M1 = reproduce + ablate + paper (Nov 1
 
 ## Problem
 
-Kaggle scores an offline Gemma 4 agent on hidden SWE-style tasks (~120, private repos): pass rate of hidden pytest tests. The sample submission scores ~0.06–0.08 on the public leaderboard because its budget is 1 minute and 10 tool calls. Public notebooks that raise the budget and add a call-plan prompt reach ~0.17–0.18, with claims up to ~0.24. The public leaderboard has ~58 tasks, so one task is ~1.7 points and identical zips reportedly vary by ~2 tasks. Progress is hard to see without a disciplined way to measure it.
+Kaggle scores an offline Gemma 4 agent on hidden SWE-style tasks (~120, private repos): pass rate of hidden pytest tests. The starter sample allows only 1 minute and 10 tool calls per task (its own score is unknown to us; one author's early scored runs were 0.05–0.08). Public notebooks that raise the budget and add a call-plan prompt reach ~0.17–0.18, with claims up to ~0.24. The public leaderboard has ~58 tasks, so one task is ~1.7 points and identical zips reportedly vary by ~2 tasks. Progress is hard to see without a disciplined way to measure it.
 
 ## Solution
 
