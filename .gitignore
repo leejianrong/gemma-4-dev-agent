@@ -26,3 +26,6 @@ __pycache__/
 kaggle/explore_kernel/
 kaggle/audit_kernel/
 kaggle/eda_kernel/
+
+# Generated figures (publishing them depends on the competition data terms)
+figures/
