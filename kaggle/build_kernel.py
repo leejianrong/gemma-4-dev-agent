@@ -119,6 +119,13 @@ KINDS = {
         ["gold_map.py"],
         "gm_main()",
     ),
+    "localize": (
+        "gemma-4-localize",
+        "Gemma 4 Localize",
+        "localize_kernel",
+        ["gold_map.py", "localize.py"],
+        "ll_main()",
+    ),
 }
 TITLE = "Gemma 4 Graph Explore"
 
