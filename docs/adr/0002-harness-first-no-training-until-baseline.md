@@ -5,7 +5,7 @@
 - Deciders: owner
 
 ## Context
-Public bundles gain from prompt and budget changes alone (sample ~0.07 to ~0.18). No one has
+Public bundles gain from prompt and budget changes alone (early scored runs of 0.05–0.08 to ~0.18). No one has
 shown a LoRA gain. There are ~25 days left, no local GPU, and a $10 compute cap. The owner
 wants LoRA, SFT, RL, distillation, quantization and pruning explored later.
 
