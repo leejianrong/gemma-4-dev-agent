@@ -1,6 +1,6 @@
 # 0001. License the repo under Apache-2.0
 
-Date: 2026-11-07. Status: accepted, pending check against the official Rules tab.
+Date: 2026-11-07. Status: accepted. Owner confirmed Apache-2.0 on 2026-11-07; still verify against the Rules tab before 2026-11-25.
 
 ## Context
 The competition requires winners to release their submission under an open licence. The
