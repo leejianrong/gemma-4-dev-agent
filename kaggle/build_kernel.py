@@ -126,6 +126,13 @@ KINDS = {
         ["gold_map.py", "localize.py"],
         "ll_main()",
     ),
+    "cochange": (
+        "gemma-4-cochange",
+        "Gemma 4 Cochange",
+        "cochange_kernel",
+        ["gold_map.py", "localize.py", "cochange.py"],
+        "cc_main()",
+    ),
 }
 TITLE = "Gemma 4 Graph Explore"
 
