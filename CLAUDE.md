@@ -3,8 +3,8 @@
 Entry for https://www.kaggle.com/competitions/gemma-4-developer-agent. We build `submission/`
 (YAML agent config, prompts, skills, optional LoRA) that Kaggle compiles into a Google ADK
 agent. Score = % of ~120 hidden SWE-style tasks whose patch passes hidden pytest tests.
-Final deadline 2026-12-02; entry/merge 2026-11-25. Planning state: `docs/QUESTIONS.md`
-(PLAN.md and SLICES.md not written yet, six forks await the owner's answers).
+Final deadline 2026-12-02; entry/merge 2026-11-25; paper (Kaggle Writeup, <=3,000 words) 2026-11-12 23:59 UTC. Planning state: `docs/QUESTIONS.md`
+Plan: `docs/PLAN.md`, slices: `docs/SLICES.md`, decisions: `docs/adr/`. Start at slice V1.
 
 ## Status: trust the code over the docs
 Scaffold only. `submission/agent.yaml` is a placeholder from data/HARNESS_README.md (Kaggle docs, gitignored) and has never
