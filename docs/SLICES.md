@@ -68,19 +68,20 @@ Vertical increments, each ending in a demonstrable result. V1 confronts the risk
 
 **Build plan**
 
-1. Owner pastes the paper-track rules; confirm format, length, and submission route.
-2. Write `paper/` from V1/V2 rows: setting, harness constraints, variants, results, failure taxonomy, limitations (noise, small set, third-party baseline).
+1. Owner joins the paper-track competition and accepts its rules; create the Kaggle Writeup draft early so the submit button is available.
+2. Write `paper/` (<=3,000 words: title, subtitle, abstract, introduction, methods and experiments, related work with citations) from V1/V2 rows: graph-tools on/off with replicates, budget and model-size context, failure taxonomy, limitations (noise, small set, third-party baseline). Attach a public notebook with the exact config, prompts and zip hashes.
 3. Every number cites a `runs.csv` row; add a check that fails on an uncited number.
 4. Submit on Kaggle before the deadline.
 
 **Demo:** the paper is submitted on the Kaggle paper-track page and the repo contains the exact source.
 
-**Rests on assumptions:** A12 (deadline date), paper rules; V1 and V2 data exists by Nov 11, otherwise the paper reports V1 plus a smaller ablation.
+**Rests on assumptions:** V1 and V2 data exists by Nov 11, otherwise the paper reports V1 plus a smaller ablation.
 
 ### Test plan
 
 #### End-to-end
-- Submission confirmation is visible on the Kaggle paper track before 2026-11-12 23:59 UTC.
+- Submission confirmation is visible on the Kaggle paper track before 2026-11-12 23:59 UTC (a saved draft does not count).
+- The word count is <=3,000 and all five required sections are present.
 - Every table value in the paper matches `runs.csv`.
 
 #### Integration

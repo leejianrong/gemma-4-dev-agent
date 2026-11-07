@@ -40,7 +40,7 @@ A repo that builds `submission/` (YAML config, prompts, optional LoRA), packages
 | R1 | Every submission zip passes local pre-flight and Kaggle `validate_directory` before upload | Must-have |
 | R2 | A full run finishes in under 12h with measured margin | Must-have |
 | R3 | Every run is recorded (config hash, model, subset, resolved, timeouts, minutes per task) | Must-have |
-| R4 | Paper submitted by 2026-11-12 | Must-have |
+| R4 | Kaggle Writeup (<=3,000 words) submitted to the paper track by 2026-11-12 23:59 UTC, with a public notebook | Must-have |
 | R5 | One of the two final submissions uses E4B or E2B | Must-have |
 | R6 | No secrets, data, zips or weights in git | Must-have |
 | R7 | LoRA/SFT/RL/distillation experiments within the $10 cap | Nice-to-have |
@@ -53,7 +53,7 @@ A repo that builds `submission/` (YAML config, prompts, optional LoRA), packages
 | S2 | Eval runner: a Kaggle kernel that unpacks the zip, runs `swegemma eval` on a named task subset with concurrency, and writes `summary.json` plus traces | 0004 |
 | S3 | Run table `experiments/runs.csv`, one row per run, committed; raw results stay out of git | 0005 |
 | S4 | Ablation matrix: each variant changes one thing from the baseline; model, sampling and limits stay fixed unless they are the variable | 0005 |
-| S5 | Paper: `paper/` Markdown built from `runs.csv`, nothing claimed without a row | 0006 |
+| S5 | Paper: `paper/` Markdown built from `runs.csv`, nothing claimed without a row; question: do code graphs/embeddings help a small agent. Optional released resource: labelled trajectories + run table | 0006 |
 | S6 | Finals: best 31B zip and best small-model zip, both tagged in git with their score | 0003 |
 
 ## Implementation decisions
@@ -77,12 +77,13 @@ See `docs/QUESTIONS.md` A1–A20. Load-bearing ones:
 | A14 | 8 min / 28 calls fits 12h at scoring concurrency | Timeouts zero out tasks; found in V1 |
 | A17 | Graph tools are not worth relying on | One ablation slot wasted, or a missed gain |
 | A18 | ±2-task noise on ~58 tasks | Wrong conclusions from single runs |
-| A12 | Dec 2 is the final deadline, Nov 12 paper | Miss a deadline; verify on Kaggle |
+| A12 | Dec 2 main final deadline (Nov 12 paper is confirmed) | Miss the main deadline; verify on Kaggle |
 
 ## Open risks
 
 - **Paper in 5 days (V1–V3).** Nothing is scored yet and Kaggle GPU quota is unknown. The paper may have to report a small, honest ablation. Earliest check: V1.
-- **Paper-track rules unknown** (format, length, how submitted; a secondary source says 3,000 words). Owner to paste them. Earliest check: today.
+- **Paper entry is separate.** The owner must join the paper-track competition and accept its rules; only a *submitted* Writeup counts. Earliest check: today.
+- **Novelty is scored.** A pure prompt-tuning report would score low; the graph-tools ablation is the novelty angle, and it may come out negative (still reportable).
 - **31B startup or throughput** may fail (a reported 600 s server health guard). Earliest check: V1.
 - **Small public set** makes gains hard to prove; relies on replicates and the held-out repo.
 - **One daily leaderboard submission** (secondary source) limits how often we can check the real score.

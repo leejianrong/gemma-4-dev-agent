@@ -23,7 +23,7 @@ Facts: score = % of tasks whose patch passes hidden validation tests (SWE-Bench 
 | A9 | Measure | Metric = resolution rate on the 129 public tasks via `swegemma eval` (stratified dev/holdout split by repo), plus median wall-clock per task against the 12h budget | ASSUMED | |
 | A10 | Security | No secrets involved; zip must have no symlinks, allowed extensions only, <3 GiB | ASSUMED | |
 | A11 | Versioning | Each submission tagged in git with score; keep best two as finals | ASSUMED | |
-| A12 | Deadline | Page text says both "Nov 12" and "Dec 2" for final submission; treat Dec 2 as final, Nov 12 as paper deadline | ASSUMED | verify on Kaggle Rules tab |
+| A12 | Deadline | Main final deadline Dec 2; paper deadline Nov 12 23:59 UTC (confirmed by the paper page) | ASSUMED | main-track date from the pasted page, verify on Rules tab |
 | D1 | Scope | RL / rejection-sampling fine-tune pipeline, distillation | DEFERRED | slice V6, after baseline (F1) |
 | D2 | Scope | Small-model $10k bonus (E2B/E4B) | DEFERRED | now slice V5 (F2) |
 | A13 | Generalisation | Hidden test (~120 tasks) comes from *private* repos; public set is fastapi/rich/requests/httpx only. So no repo-specific prompt tricks; hold out one repo when judging changes | ASSUMED | from dataset description |
@@ -35,7 +35,7 @@ Facts: score = % of tasks whose patch passes hidden validation tests (SWE-Bench 
 | A19 | Failure | Startup risk: a 4xL4 pilot failed a 600 s inference-server health guard before any task ran. Slice 1 must confirm a 31B submission starts and finishes within limits | ASSUMED | third-party report |
 | A20 | Reuse | Baseline = flexonafft budget-aware bundle (Apache-2.0, credits matterhorn3838 SuperAgent). Reuse with attribution kept in the prompt; other notebooks have no licence field, so no code reuse | ASSUMED | licence per notebook B |
 | D3 | Scope | Base-model quantization/pruning as shipped artifacts | DEFERRED | not allowed by the rules (only four w4a16-ct bases + safetensors adapters); study only |
-| A21 | Paper | Paper-track rules (format, length, route) unread; secondary source says 3,000 words; owner to paste | ASSUMED | open until pasted |
+| A21 | Paper | Paper rules read 2026-11-07: Kaggle Writeup, 3,000 words, sections as above, five criteria (novelty, quality/generality, relevance, verifiability, clarity), deadline Nov 12 23:59 UTC; separate competition entry required | DECIDED | ADR-0006, slice V3 |
 | A22 | Compute | Kaggle notebooks have no Docker daemon; use the subprocess sandbox in kernels, Docker only locally | ASSUMED | confirm in V1 smoke run |
 
 Note: the Status column for F1-F6 is DECIDED; answers are in the last column and the ADRs.
