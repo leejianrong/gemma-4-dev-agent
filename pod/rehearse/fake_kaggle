@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Fake kaggle CLI for rehearsals. FAKE_DIR=fixture root, FAKE_MODE=ok|auth_fail|no_rules|truncate|slow|zip|hang
+mode="${FAKE_MODE:-ok}"
+[ "$1" = competitions ] || exit 2
+sub=$2
+shift 3
+case "$mode" in
+  auth_fail) echo "401 Client Error: Unauthorized (token=${KAGGLE_API_TOKEN:-none})" >&2; exit 1 ;;
+  no_rules) echo "403 Forbidden: you must accept the competition rules" >&2; exit 1 ;;
+esac
+if [ "$sub" = files ]; then
+  size=200 tok=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --page-size) size=$2; shift ;;
+      --page-token) tok=${2#OFF}; shift ;;
+    esac
+    shift
+  done
+  size=${FAKE_PAGE:-$size}
+  echo "Warning: Looks like you're using an outdated kaggle version"
+  total=$(($(wc -l <"$FAKE_DIR/../listing.csv") - 1))
+  [ $((tok + size)) -lt "$total" ] && echo "Next Page Token = OFF$((tok + size))"
+  echo "name,size,creationDate"
+  tail -n +2 "$FAKE_DIR/../listing.csv" | tail -n +$((tok + 1)) | head -n "$size"
+  exit 0
+fi
+# download COMP -f NAME -p DIR -q
+name="" dir="."
+while [ $# -gt 0 ]; do
+  case "$1" in -f) name=$2; shift ;; -p) dir=$2; shift ;; esac
+  shift
+done
+case "$mode" in
+  slow) sleep "${FAKE_SLEEP:-3}" ;;
+  hang) sleep 600 ;;
+esac
+mkdir -p "$dir"
+src="$FAKE_DIR/$name"
+base=$(basename "$name")
+case "$mode" in
+  truncate) head -c $(($(stat -c %s "$src") / 2)) "$src" >"$dir/$base" ;;
+  zip) (cd "$(dirname "$src")" && python3 -m zipfile -c "$dir/$base.zip" "$base") ;;
+  *) cp "$src" "$dir/$base" ;;
+esac

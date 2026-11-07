@@ -29,3 +29,11 @@ check: lint test validate ## Everything the pre-push hook and CI run
 
 zip: ## Build dist/submission.zip (runs validate first)
 	uv run python scripts/submission.py zip submission dist/submission.zip
+
+.PHONY: rehearse
+rehearse: ## Rehearse pod/job.sh against fake CLIs with injected failures (free, ~3 min)
+	bash pod/rehearse/run.sh
+
+.PHONY: kernel
+kernel: ## Build the Kaggle explore kernel from pod/explore.py (username read by key name)
+	python3 kaggle/build_kernel.py "$$(python3 -I -c "import json,os;print(json.load(open(os.path.expanduser('~/.kaggle/credentials.json')))['username'])")"
