@@ -29,3 +29,7 @@ check: lint test validate ## Everything the pre-push hook and CI run
 
 zip: ## Build dist/submission.zip (runs validate first)
 	uv run python scripts/submission.py zip submission dist/submission.zip
+
+.PHONY: rehearse
+rehearse: ## Rehearse pod/job.sh against fake CLIs with injected failures (free, ~3 min)
+	bash pod/rehearse/run.sh

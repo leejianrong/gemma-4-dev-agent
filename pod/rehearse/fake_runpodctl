@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fake runpodctl: `send --code BASE FILE` prints a relay code and keeps the room for 1s.
+[ "$1" = send ] || exit 0
+base=$3
+file=$4
+mkdir -p "${FAKE_RELAY:-/tmp/fake-relay}"
+cp "$file" "${FAKE_RELAY:-/tmp/fake-relay}/"
+echo "Sending '$file'. Code is: ${base}-42"
+sleep 1
