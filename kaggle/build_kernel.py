@@ -90,20 +90,44 @@ def _inline(name: str) -> str:
     return src
 
 
+KINDS = {
+    "explore": (
+        "gemma-4-graph-explore",
+        "Gemma 4 Graph Explore",
+        "explore_kernel",
+        [],
+        'main(["x", str(DATA), str(OUTD)])',
+    ),
+    "audit": (
+        "gemma-4-graph-audit",
+        "Gemma 4 Graph Audit",
+        "audit_kernel",
+        ["audit.py"],
+        "audit_main()",
+    ),
+    "eda": (
+        "gemma-4-eda-extract",
+        "Gemma 4 EDA Extract",
+        "eda_kernel",
+        ["eda_extract.py"],
+        "eda_main()",
+    ),
+}
+TITLE = "Gemma 4 Graph Explore"
+
+
 def build(username: str, kind: str = "explore") -> Path:
-    global OUT, SLUG
+    global OUT, SLUG, TITLE
+    SLUG, TITLE, outdir, extras, entry = KINDS[kind]
+    OUT = Path(__file__).resolve().parent / outdir
     src = _inline("explore.py")
-    entry = 'main(["x", str(DATA), str(OUTD)])'
-    if kind == "audit":
-        OUT = Path(__file__).resolve().parent / "audit_kernel"
-        SLUG = "gemma-4-graph-audit"
-        src += "\n" + _inline("audit.py").replace("from __future__ import annotations\n", "")
-        entry = "audit_main()"
+    for name in extras:
+        src += "\n" + _inline(name).replace("from __future__ import annotations\n", "")
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "kernel.py").write_text(src + WRAPPER.replace("__ENTRY__", entry), encoding="utf-8")
     meta = {
         "id": f"{username}/{SLUG}",
-        "title": "Gemma 4 Graph Explore" if SLUG.endswith("explore") else "Gemma 4 Graph Audit",
+        "title": TITLE,
         "code_file": "kernel.py",
         "language": "python",
         "kernel_type": "script",
