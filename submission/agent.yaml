@@ -1,0 +1,23 @@
+# PLACEHOLDER written from data/HARNESS_README.md, not yet run through adk_submission.
+# Once the data is downloaded, diff this against data/sample_submission/agent.yaml
+# and run validate_directory in a Kaggle notebook before trusting it.
+name: coder
+model: gemma-4-31b-it-qat-w4a16-ct
+description: Fixes a repository issue by editing /workspace and submitting a patch.
+instruction: !include prompts/system.md
+tools:
+  - run_command
+  - read_file
+  - edit_file
+  - write_file
+  - submit_patch
+  - get_status
+  - get_code_neighbors
+  - search_similar_code
+  - get_code_subgraph
+generate_content_config:
+  temperature: 0.2
+  max_output_tokens: 16384
+  thinking_config:
+    thinking_budget: 4096
+    include_thoughts: true

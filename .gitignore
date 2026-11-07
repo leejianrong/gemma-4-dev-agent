@@ -1,0 +1,23 @@
+# Competition data (~21 GiB): fetch with the kaggle CLI, never commit
+data/
+results/
+dist/
+*.zip
+*.tgz
+*.npz
+
+# LoRA weights are too big for git; the zip builder picks them up from disk
+submission/adapters/**/*.safetensors
+
+# Secrets
+.env
+.env.*
+kaggle.json
+credentials.json
+
+# Tooling
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc

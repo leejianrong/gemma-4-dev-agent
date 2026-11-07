@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Mirrors the cheap CI jobs. Bypass for a scoped exception with `git push --no-verify`.
+exec make check

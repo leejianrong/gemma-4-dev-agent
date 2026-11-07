@@ -1,0 +1,22 @@
+[project]
+name = "gemma-dev-agent"
+version = "0.0.0"
+description = "Gemma 4 Developer Agent Kaggle competition entry"
+requires-python = ">=3.11"
+dependencies = []
+
+# google-adk, litellm, vllm, swegemma and adk_submission are supplied by the Kaggle
+# notebook image and cannot be installed locally. Keep this file to dev tooling only.
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.pytest.ini_options]
+pythonpath = ["scripts"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
