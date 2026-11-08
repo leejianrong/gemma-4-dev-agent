@@ -1,0 +1,7 @@
+run_id,instance_id,repo,resolved,status,test_exit_code,patch_chars,tool_calls,turns,duration_s,prompt_tokens,completion_tokens,max_context_tokens
+fx_baseline,fastapi_0001,fastapi/fastapi,1,resolved,0,840,4,3,41.0,10300,540,5600
+fx_baseline,rich_0002,Textualize/rich,0,time_limit,,0,3,4,3600.0,24900,720,10200
+fx_baseline,requests_0003,psf/requests,0,empty_patch,,0,1,2,22.0,6500,360,4100
+fx_prompt_v2,fastapi_0001,fastapi/fastapi,1,resolved,0,840,4,3,41.0,10300,540,5600
+fx_prompt_v2,rich_0002,Textualize/rich,1,resolved,0,512,61,4,1900.0,24900,720,10200
+fx_prompt_v2,requests_0003,psf/requests,0,unresolved,1,300,14,2,640.0,6500,360,4100

@@ -1,0 +1,102 @@
+{
+ "schema_version": "1",
+ "run_id": "fx_baseline",
+ "instance_id": "rich_0002",
+ "repo": "Textualize/rich",
+ "outcome": {
+  "resolved": false,
+  "status": "time_limit",
+  "test_exit_code": null,
+  "patch_chars": 0,
+  "duration_s": 3600.0,
+  "error": null
+ },
+ "limits": {
+  "max_tool_calls": 100,
+  "max_time_s": 3600,
+  "max_turns": 500,
+  "context_window": 32768
+ },
+ "steps": [
+  {
+   "i": 0,
+   "t_s": 4.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 2400,
+   "duration_s": 4,
+   "prompt_tokens": 2400,
+   "completion_tokens": 180
+  },
+  {
+   "i": 1,
+   "t_s": 5.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 2600,
+   "duration_s": 1,
+   "tool": "grep",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900
+  },
+  {
+   "i": 2,
+   "t_s": 10.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 3300,
+   "duration_s": 5,
+   "prompt_tokens": 3300,
+   "completion_tokens": 180
+  },
+  {
+   "i": 3,
+   "t_s": 11.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 6900,
+   "duration_s": 1,
+   "tool": "read_file",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900,
+   "paths": [
+    "rich/table.py"
+   ]
+  },
+  {
+   "i": 4,
+   "t_s": 311.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 9000,
+   "duration_s": 300,
+   "prompt_tokens": 9000,
+   "completion_tokens": 180
+  },
+  {
+   "i": 5,
+   "t_s": 2111.0,
+   "kind": "tool",
+   "ok": false,
+   "context_tokens": 9600,
+   "duration_s": 1800,
+   "tool": "run_command",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900,
+   "error": "command timed out"
+  },
+  {
+   "i": 6,
+   "t_s": 3511.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 10200,
+   "duration_s": 1400,
+   "prompt_tokens": 10200,
+   "completion_tokens": 180
+  }
+ ]
+}
