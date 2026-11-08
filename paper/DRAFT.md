@@ -29,9 +29,9 @@ The public set contains 129 tasks: fastapi 67, rich 48, requests 13, and httpx 1
 
 ## 3. Mapping patches to nodes
 
-We use the base commit and the *old* file for each patch hunk. We walk its `ast` line ranges and assign each changed line to the innermost function or class. We checked the mapping in three ways. All 632 of 632 library hunks match the old file at the computed lines. All 318 of 318 function nodes contain their removed lines in the graph text. All 470 of 470 mapped nodes have a graph header that names them [A24].
+We use the base commit and the *old* file for each patch hunk. We walk its `ast` line ranges and assign each changed line to the innermost function or class. We checked the mapping in three ways. All 632 library hunks match the old file at the computed lines. All 318 function nodes contain their removed lines in the graph text. All 470 mapped nodes have a graph header that names them [A24].
 
-We map 442 hunks to a node. Another 164 are module-level, 26 are in new files, and 21 hit async functions. At least one node maps for 116 of 129 tasks; 52 tasks have two or more mapped nodes [A24]. An earlier text-matching method covered only 353 of 430 hunks. We replaced it with the old-file mapping [A24].
+We map 442 hunks to a node. Another 164 are module-level, 26 are in new files, and 21 hit async functions. At least one node maps for 116 of 129 tasks; 52 tasks have two or more mapped nodes [A24]. An earlier text-matching method gave a subset of this mapping for only 353 of 430 hunks, so we replaced it [A24].
 
 ## 4. Localization
 
@@ -46,7 +46,7 @@ We rank library nodes with BM25 over the issue text. For each of the 116 mapped 
 
 BM25 recall at 1, 5, and 10 is 0.11, 0.36, and 0.42. Its hit@10 is 0.51 for fastapi, 0.53 for rich, and 0.82 for requests. When we include tests and docs, BM25 hit@10 falls to 35%. The boost method also does worse at small k: recall@1 is 0.05 versus 0.11 for BM25 [A28; figure eda_04]. We did not tune the settings (3 seeds, head 5, lambda 0.5). Thus BM25 ≥ graph > embedding describes these defaults, not a bound.
 
-**By target kind.** We score 380 sync function nodes and 90 class nodes. Another 18 library hunks in 8 tasks fall in async functions [A35]. Graph expansion finds fewer function targets than BM25 (40% versus 43%). It finds more class targets (36% versus 25%, across 33 tasks). Expansion helps when the target is a class and the issue names its methods [A35; figure eda_07].
+**By target kind.** We score 380 sync function nodes and 90 class nodes. Another 18 library hunks in 8 tasks fall in async functions [A35]. Graph expansion does not help on function targets (40% versus 43% for BM25). It helps on class targets (36% versus 25%, across 33 tasks). Expansion helps when the target is a class and the issue names its methods [A35; figure eda_07].
 
 ## 5. Co-change: what the graph does predict
 
