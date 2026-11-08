@@ -8,6 +8,9 @@ dependencies = []
 # google-adk, litellm, vllm, swegemma and adk_submission are supplied by the Kaggle
 # notebook image and cannot be installed locally. Keep this file to dev tooling only.
 [dependency-groups]
+dash = [
+    "indah>=0.13",
+]
 dev = [
     "jsonschema>=4.26.0",
     "numpy>=2.4.6",

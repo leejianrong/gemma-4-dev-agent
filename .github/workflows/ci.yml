@@ -32,8 +32,8 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - run: uv sync --frozen --group viz
-      - run: uv run --frozen --group viz pytest -q
+      - run: uv sync --frozen --group viz --group dash
+      - run: uv run --frozen --group viz --group dash pytest -q
       - run: uv run python scripts/submission.py check submission
 
   secrets:

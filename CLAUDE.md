@@ -15,6 +15,7 @@ run through `adk_submission`. Nothing has been scored.
 ## Commands
 - `make` lists targets. `make setup` installs dev tools and the pre-push hook.
 - `make check` = lint + unit tests + submission pre-flight. Same as pre-push and CI.
+- `make dash` serves the indah dashboards (fixtures until `make pull-runs KERNEL=slug` loads real runs).
 - `make zip` builds `dist/submission.zip` (agent.yaml at archive root).
 
 ## Facts that are not obvious from the code
