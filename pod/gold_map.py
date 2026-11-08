@@ -370,6 +370,8 @@ def gm_task(task: dict, data: Path, graph: dict) -> tuple[list[dict], list[dict]
                     text_in_line=int(bool(text_nodes) and set(text_nodes) <= set(mapped)),
                 )
             )
+    indeg: collections.Counter = collections.Counter(e["target"] for e in graph.get("edges", []))
+    outdeg: collections.Counter = collections.Counter(e["source"] for e in graph.get("edges", []))
     node_rows = []
     for nid, a in agg.items():
         node_rows.append(
@@ -387,6 +389,9 @@ def gm_task(task: dict, data: Path, graph: dict) -> tuple[list[dict], list[dict]
                 "text_lines": a["text_lines"],
                 "first_missing": a["first_missing"],
                 "header_ok": a["header_ok"],
+                "in_degree": indeg.get(nid, 0),
+                "out_degree": outdeg.get(nid, 0),
+                "graph_nodes": len(graph["nodes"]),
             }
         )
     return hunk_rows, node_rows, {"tar_sample": tar_sample, "def_stats": def_stats}
