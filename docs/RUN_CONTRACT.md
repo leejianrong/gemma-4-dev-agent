@@ -13,6 +13,18 @@ A runs directory holds three things:
 
 Columns are listed in `RUNS_COLUMNS` and `TASK_COLUMNS` in `analysis/runs.py`.
 
+## Logging a run
+`experiments/runs.csv` is the permanent log, one row per run, in the contract's column order:
+
+```
+uv run python scripts/log_run.py data/runs/<kernel> --run-id ID --variant NAME --model M \
+    --subset 30-task --zip dist/submission.zip
+```
+
+Counts, rate and minutes per task are computed from the run's `task_results.csv`. A run without a
+zip SHA-256 (`--zip` or `--zip-sha256`) is refused, as is a repeated `run_id`. `make zip` prints
+the hash and is byte-deterministic, so the hash names exactly what ran.
+
 ## Status
 `resolved`, `unresolved` (patch failed the tests), `empty_patch`, `time_limit`, `tool_budget`,
 `turn_budget`, `model_timeout`, `error`. `resolved` is true only for `resolved`.

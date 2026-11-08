@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from pathlib import Path
 
 import jsonschema
 
 SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schemas" / "trace.schema.json"
+SHA256 = re.compile(r"[0-9a-f]{64}")
 STATUSES = (
     "resolved",
     "unresolved",
@@ -26,9 +28,10 @@ STATUSES = (
     "error",
 )
 RUNS_COLUMNS = (
-    "run_id variant parent_variant git_sha model temperature seed subset max_tool_calls max_time_s "
+    "run_id variant parent_variant git_sha zip_sha256 model temperature seed subset "
+    "max_tool_calls max_time_s "
     "n_tasks n_resolved resolution_rate n_empty_patch n_time_limit n_tool_budget n_error "
-    "wall_s kernel notes"
+    "wall_s minutes_per_task kernel notes"
 ).split()
 TASK_COLUMNS = (
     "run_id instance_id repo resolved status test_exit_code patch_chars tool_calls turns "
@@ -135,6 +138,9 @@ def validate_runs(path: Path, task_results: Path | None = None) -> list[str]:
     for n, r in enumerate(rows, 2):
         for col in ("n_tasks", "n_resolved", "seed"):
             _num(r, col, "runs.csv", n, problems, int)
+        _num(r, "minutes_per_task", "runs.csv", n, problems)
+        if not SHA256.fullmatch(r["zip_sha256"]):
+            problems.append(f"runs.csv row {n}: zip_sha256 must be 64 hex characters")
     if task_results is None or problems:
         return problems
     _, trs = read_csv(task_results)

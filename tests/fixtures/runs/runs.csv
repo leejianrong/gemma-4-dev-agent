@@ -1,3 +1,3 @@
-run_id,variant,parent_variant,git_sha,model,temperature,seed,subset,max_tool_calls,max_time_s,n_tasks,n_resolved,resolution_rate,n_empty_patch,n_time_limit,n_tool_budget,n_error,wall_s,kernel,notes
-fx_baseline,baseline,,0000000,gemma-4-31b-w4a16-ct,0.2,0,fixture-3,100,3600,3,1,0.3333,1,1,0,0,3663.0,fixture,synthetic fixture
-fx_prompt_v2,prompt_v2,baseline,0000000,gemma-4-31b-w4a16-ct,0.2,0,fixture-3,100,3600,3,2,0.6667,0,0,0,0,2581.0,fixture,synthetic fixture
+run_id,variant,parent_variant,git_sha,zip_sha256,model,temperature,seed,subset,max_tool_calls,max_time_s,n_tasks,n_resolved,resolution_rate,n_empty_patch,n_time_limit,n_tool_budget,n_error,wall_s,minutes_per_task,kernel,notes
+fx_baseline,baseline,,0000000,0000000000000000000000000000000000000000000000000000000000000000,gemma-4-31b-w4a16-ct,0.2,0,fixture-3,100,3600,3,1,0.3333,1,1,0,0,3663.0,20.35,fixture,synthetic fixture
+fx_prompt_v2,prompt_v2,baseline,0000000,0000000000000000000000000000000000000000000000000000000000000000,gemma-4-31b-w4a16-ct,0.2,0,fixture-3,100,3600,3,2,0.6667,0,0,0,0,2581.0,14.34,fixture,synthetic fixture
