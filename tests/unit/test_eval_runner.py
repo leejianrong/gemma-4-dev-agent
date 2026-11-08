@@ -188,3 +188,47 @@ def test_build_embeds_parameters_the_zip_hash_and_gpu_metadata(tmp_path, monkeyp
     assert p["model"].startswith("gemma-4-")
     monkeypatch.setenv("EVAL_TASKS", "a_1,b_2")
     assert bk.eval_params(bk.submission_files())["tasks"] == ["a_1", "b_2"]
+
+
+def test_wheel_python_mismatch_names_the_tag_the_wheels_target():
+    wheels = [
+        "/w/vllm-0.19-cp38-abi3-x.whl",
+        "/w/numpy-2-cp312-cp312-linux.whl",
+        "/w/a-1-py3-none-any.whl",
+    ]
+    assert er.er_wheel_python_mismatch(wheels, (3, 12)) == ""
+    assert er.er_wheel_python_mismatch(wheels, (3, 13)) == "cp312"
+    assert er.er_wheel_python_mismatch(["/w/a-1-py3-none-any.whl"], (3, 13)) == ""
+
+
+def test_trace_metrics_give_token_totals_and_peak_context(tmp_path):
+    trace = {
+        "final_metrics": {"total_prompt_tokens": 1000, "total_completion_tokens": 50},
+        "steps": [
+            {"source": "system"},
+            {"source": "agent", "metrics": {"prompt_tokens": 300}},
+            {"source": "agent", "metrics": {"prompt_tokens": 700}},
+        ],
+    }
+    p = tmp_path / "t.json"
+    p.write_text(json.dumps(trace))
+    assert er.er_trace_metrics(p) == {
+        "prompt_tokens": 1000,
+        "completion_tokens": 50,
+        "max_context_tokens": 700,
+    }
+    assert er.er_trace_metrics(tmp_path / "missing.json") == {}
+    row = er.er_row("r", task(0), res(trace_path=str(p), total_llm_calls=9), 28, 480)
+    assert row["prompt_tokens"] == 1000 and row["max_context_tokens"] == 700 and row["turns"] == 9
+
+
+def test_full_patch_and_test_output_are_saved_per_task(tmp_path):
+    er.er_save_artifacts(tmp_path, res(agent_patch="diff --git", test_output="E boom"), "t_1")
+    assert (tmp_path / "patches" / "t_1.patch").read_text() == "diff --git"
+    assert (tmp_path / "test_outputs" / "t_1.log").read_text() == "E boom"
+    er.er_save_artifacts(tmp_path, res(), "t_2")
+    assert not (tmp_path / "patches" / "t_2.patch").exists()
+
+
+def test_a_harness_error_message_makes_the_status_error():
+    assert er.er_status(res(error_message="sandbox died"), 28, 480) == "error"

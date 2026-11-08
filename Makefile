@@ -96,4 +96,4 @@ kernel-eval: ## Build the GPU eval-runner kernel. EVAL_TASKS=5|all|id,id EVAL_RU
 	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" eval
 
 run-eval: kernel-eval ## Push the eval runner to Kaggle GPU (uses quota; capped by EVAL_TIMEOUT_S, default 7200)
-	kaggle kernels push -p kaggle/eval_kernel -t $${EVAL_TIMEOUT_S:-7200}
+	kaggle kernels push -p kaggle/eval_kernel -t $${EVAL_TIMEOUT_S:-7200} --accelerator $${EVAL_MACHINE:-NvidiaL4}

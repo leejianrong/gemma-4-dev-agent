@@ -153,6 +153,15 @@ KINDS = {
     ),
 }
 TITLE = "Gemma 4 Graph Explore"
+# Probed with EVAL_PROBE=1: "NvidiaL4" gives 4 x L4 (23 GB); "NvidiaL4x4", "NvidiaL4X4" and
+# "NvidiaTeslaL4" are silently ignored and fall back to 2 x T4.
+EVAL_MACHINE = "NvidiaL4"
+# The competition's image (Python 3.12, CUDA 12.8), from the public metadata of matterhorn3838's
+# "Gemma 4 SuperAgent" with `kaggle kernels pull -m`. The wheelhouse targets cp312.
+EVAL_IMAGE = (
+    "gcr.io/kaggle-private-byod/python@sha256:"
+    "37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461"
+)
 
 
 def submission_files() -> dict[str, str]:
@@ -185,6 +194,7 @@ def eval_params(files: dict[str, str]) -> dict:
         "seed": int(os.environ.get("EVAL_SEED", "0")),
         "sandbox": os.environ.get("EVAL_SANDBOX", "subprocess"),
         "zip_sha256": sha,
+        "probe": os.environ.get("EVAL_PROBE") == "1",
     }
 
 
@@ -220,8 +230,13 @@ def build(username: str, kind: str = "explore") -> Path:
         "model_sources": [],
     }
     if kind == "eval":
+        slug = os.environ.get("EVAL_SLUG", SLUG)
+        meta["title"] = slug.replace("-", " ").title()  # Kaggle ties the slug to the title
         meta["enable_gpu"] = "true"
-        meta["machine_shape"] = os.environ.get("EVAL_MACHINE", "NvidiaL4x4")
+        meta["machine_shape"] = os.environ.get("EVAL_MACHINE", EVAL_MACHINE)
+        image = os.environ.get("EVAL_IMAGE", EVAL_IMAGE)
+        if image:
+            meta["docker_image"] = image
         meta["dataset_sources"] = ["metric/gemma-4-developer-agent-wheelhouse"]
         meta["model_sources"] = [f"google/gemma-4/other/{params['model']}/2"]
     (OUT / "kernel-metadata.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")

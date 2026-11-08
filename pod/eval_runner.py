@@ -58,7 +58,7 @@ ER_TASK_COLUMNS = (
 ER_FIELDS = {
     "test_exit_code": ("test_exit_code", "exit_code"),
     "tool_calls": ("tool_calls", "num_tool_calls", "tool_call_count"),
-    "turns": ("turns", "num_turns", "llm_calls", "num_llm_calls"),
+    "turns": ("turns", "total_llm_calls", "num_turns", "llm_calls"),
     "duration_s": ("duration_seconds", "duration_s", "duration"),
     "prompt_tokens": ("prompt_tokens", "input_tokens"),
     "completion_tokens": ("completion_tokens", "output_tokens"),
@@ -108,7 +108,7 @@ def er_select(tasks: list, spec, seed: int = 0) -> list:
 
 def er_status(result, max_tool_calls: int, max_time_s: float) -> str:
     """Our status from a harness result. Heuristic until the real status fields are known."""
-    if er_pick(result, ("error", "exception"), None):
+    if er_pick(result, ("error", "error_message", "exception"), None):
         return "error"
     if bool(er_pick(result, ("resolved",), False)):
         return "resolved"
@@ -139,6 +139,8 @@ def er_row(run_id: str, task, result, max_tool_calls: int, max_time_s: float) ->
         row[col] = v if v != "" else ("0" if col in ("tool_calls", "turns") else "")
     if row["duration_s"] == "":
         row["duration_s"] = 0.0
+    for col, v in er_trace_metrics(er_pick(result, ("trace_path",), "")).items():
+        row[col] = v
     return {c: row[c] for c in ER_TASK_COLUMNS}
 
 
@@ -156,6 +158,41 @@ def er_error_row(run_id: str, task, exc: BaseException, elapsed: float) -> dict:
         duration_s=round(elapsed, 1),
     )
     return row
+
+
+def er_trace_metrics(trace_path) -> dict:
+    """Token totals and peak per-call prompt size from an ATIF trace; {} when unreadable.
+
+    The result object's own total_tokens is 0; the trace holds the real counts (smoke run, A30).
+    """
+    try:
+        t = json.loads(Path(trace_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {}
+    fm = t.get("final_metrics") or {}
+    peaks = [
+        (s.get("metrics") or {}).get("prompt_tokens") or 0
+        for s in t.get("steps", [])
+        if s.get("source") == "agent"
+    ]
+    return {
+        "prompt_tokens": fm.get("total_prompt_tokens", ""),
+        "completion_tokens": fm.get("total_completion_tokens", ""),
+        "max_context_tokens": max(peaks) if peaks else "",
+    }
+
+
+def er_save_artifacts(out: Path, result, instance_id: str) -> None:
+    """Full patch and verification output per task (the raw dump cuts long strings)."""
+    for sub, attr, ext in (
+        ("patches", "agent_patch", "patch"),
+        ("test_outputs", "test_output", "log"),
+    ):
+        text = er_pick(result, (attr,), "")
+        if text:
+            d = out / sub
+            d.mkdir(parents=True, exist_ok=True)
+            (d / f"{instance_id}.{ext}").write_text(str(text), encoding="utf-8")
 
 
 def er_dump(result, limit: int = 300) -> dict:
@@ -215,6 +252,7 @@ async def er_run_all(
                 res = await evaluator.evaluate_task(task=task, task_index=i, total_tasks=n)
                 row = er_row(p["run_id"], task, res, p["max_tool_calls"], p["max_time_s"])
                 raw = er_dump(res)
+                er_save_artifacts(out, res, task.instance_id)
             except Exception as e:  # one bad task must not lose the rest
                 er_log(f"ERROR {task.instance_id}: {type(e).__name__}: {e}")
                 row, raw = er_error_row(p["run_id"], task, e, time.time() - t0), {"error": repr(e)}
@@ -289,6 +327,13 @@ def er_prepare_wheels(wheelhouse: Path, tmp: Path) -> list[str]:
     return sorted(str(w) for w in tmp.glob("*.whl"))
 
 
+def er_wheel_python_mismatch(wheels: list[str], version: tuple[int, int]) -> str:
+    """The cpXY tag the wheels target when it differs from this interpreter, else ''."""
+    want = f"cp{version[0]}{version[1]}"
+    tags = {m.group(1) for w in wheels if (m := re.search(r"-(cp3\d+)-cp3\d+-", Path(w).name))}
+    return "" if not tags or want in tags else "/".join(sorted(tags))
+
+
 def er_gpu_line() -> str:
     try:
         out = subprocess.run(
@@ -355,13 +400,23 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
     er_set_env()
     outd.mkdir(parents=True, exist_ok=True)
     state = {"done": 0, "inflight": 0, "total": 0, "skipped": []}
-    er_log(f"STAGE gpu-check (t+0s) {er_gpu_line()}")
+    er_log(f"STAGE gpu-check (t+0s) python={sys.version.split()[0]} {er_gpu_line()}")
+    if p.get("probe"):  # report the hardware and stop: a cheap way to test accelerator names
+        summary = {"probe": True, "python": sys.version.split()[0], "gpu": er_gpu_line()}
+        (outd / "report.json").write_text(json.dumps(summary), encoding="utf-8")
+        return summary
     if not ER_WHEELHOUSE.is_dir():
         raise SystemExit(f"ERROR wheelhouse dataset missing at {ER_WHEELHOUSE}")
     er_log("STAGE install-wheels")
     wheels = er_prepare_wheels(ER_WHEELHOUSE, Path("/tmp/wheelhouse"))
     if not wheels:
         raise SystemExit("ERROR no wheels found in the wheelhouse")
+    bad = er_wheel_python_mismatch(wheels, sys.version_info[:2])
+    if bad:
+        raise SystemExit(
+            f"ERROR wheels target {bad} but this kernel runs Python "
+            f"{sys.version_info[0]}.{sys.version_info[1]}; pin the original Docker image"
+        )
     subprocess.run(
         [sys.executable, "-m", "pip", "install", "-q", "--no-deps", "--force-reinstall", *wheels],
         check=True,
@@ -420,6 +475,12 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
     if gpus < 1 or not torch.cuda.is_available():
         raise SystemExit("ERROR no CUDA device visible")
     tp = 4 if gpus >= 4 else (2 if gpus >= 2 else 1)
+    major = torch.cuda.get_device_capability(0)[0]
+    if major < 8:
+        raise SystemExit(
+            f"ERROR GPU compute capability {major}.x cannot run bfloat16 (competition: 4 x L4): "
+            "request the NvidiaL4 machine shape"
+        )
     er_log(f"STAGE start-vllm (t+{time.time() - t0:.0f}s) gpus={gpus} tp={tp} model={model}")
     extra = (
         ("--hf-overrides", '{"architectures": ["Gemma4ForCausalLM"], "model_type": "gemma4"}')
