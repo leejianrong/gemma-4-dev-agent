@@ -99,3 +99,18 @@ def test_the_app_tree_includes_the_localization_page():
         assert "Localization benchmark" in line and "BM25" in line
     finally:
         handle.stop()
+
+
+def test_the_noise_page_builds_and_reaches_the_app_tree():
+    import indah
+
+    handle = indah.launch(dash_app.create(), block=False, open_inline=False)
+    try:
+        with urllib.request.urlopen(handle.url.rstrip("/") + "/api/stream", timeout=10) as r:
+            for raw in r:
+                line = raw.decode()
+                if '"type":"init"' in line.replace(" ", ""):
+                    break
+        assert "Noise and replicate planner" in line and "one task is worth" in line
+    finally:
+        handle.stop()

@@ -38,9 +38,10 @@ def overview(data: RunData):
     )
 
 
-from dashboards import localization  # noqa: E402
+from dashboards import localization, noise_page  # noqa: E402
 
 PAGES: list[tuple[str, Callable[[RunData], object]]] = [
     ("Overview", overview),
     ("Localization", localization.page),
+    ("Noise planner", noise_page.page),
 ]
