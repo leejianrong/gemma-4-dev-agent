@@ -56,8 +56,8 @@ Many patches edit more than one site. We take 50 tasks with 2 to 20 library gold
 |---|---|---|---|
 | 1-hop call neighbours | about 5 | 23% | 23% |
 | Same module | about 33 | 62% | 14% |
-| 1-hop plus module | about 35 | 69% | |
-| 2-hop | | 57% | 12% |
+| 1-hop plus module | about 35 | 69% | 13% |
+| 2-hop | about 35 | 56% | 12% |
 | 10 embedding neighbours | 10 | 20% | 6% |
 
 One-hop call neighbours beat chance by a median 39 times. Two hops increase the candidate set but lose precision. Embedding neighbours add little beyond the call graph [A29; figure eda_05]. After the first edit, an agent could check callers and other nodes in the same module. We have not tested that advice with a model; it is our first planned ablation.
@@ -72,13 +72,13 @@ The measured localization cost is small. Only 18 library hunks in 8 tasks are as
 
 **Runner.** We run the competition's `Evaluator` in a CLI-pushed Kaggle kernel. It needs three undocumented settings: `machine_shape` set to `NvidiaL4`, the competition's Python 3.12 image, and the wheelhouse and model attached as inputs. Kaggle silently ignores `NvidiaL4x4` and supplies two T4s; vLLM then refuses bfloat16. Cold start takes 108 s for wheels and 385 s for the model [A33]. We observed the result and trace schema (ATIF v1.7) [A34] and normalise them in `docs/RUN_CONTRACT.md`.
 
-**Baseline.** We use a reused budget-aware bundle with one agent, no adapter, 8 min, 28 tool calls, 80 turns per task, and the 31B w4a16 base [A31, docs/ATTRIBUTION.md]. On a stratified 30-task sample, it resolves 3 tasks (10%): fastapi 2 of 10, rich 1 of 10, requests 0 of 9, and httpx 0 of 1. Four tasks hit the session timeout, two hit the tool budget, and one returned an empty patch. The median task takes 5.2 minutes. The 30-task run takes 2.65 hours, which projects to about 10.6 hours for 120 tasks run one at a time [baseline30-2026-11-08]. A 5-task smoke run on the same zip resolves 0 [smoke-2026-11-08]. Leaderboard result: PENDING (one submission, zip sha256 d66442e9).
+**Baseline.** We use a reused budget-aware bundle with one agent, no adapter, 8 min, 28 tool calls, 80 turns per task, and the 31B w4a16 base [A31, docs/ATTRIBUTION.md]. Its prompt tells the agent never to use the three graph tools, so this baseline measures an agent that relies on grep and file reading, not one that uses the graph. On a stratified 30-task sample, it resolves 3 tasks (10%): fastapi 2 of 10, rich 1 of 10, requests 0 of 9, and httpx 0 of 1. Four tasks hit the session timeout, two hit the tool budget, and one returned an empty patch. The median task takes 5.2 minutes. The 30-task run takes 2.65 hours, which projects to about 10.6 hours for 120 tasks run one at a time [baseline30-2026-11-08]. A 5-task smoke run on the same zip resolves 0 [smoke-2026-11-08]. Leaderboard result: PENDING (one submission, zip sha256 d66442e9).
 
 **Noise.** At a baseline near 17% on about 58 public-leaderboard tasks, one score has a 95% band of roughly plus or minus 9.7 points. We assume per-task variance of 0.05, which reproduces the roughly two-task noise others report. On the same tasks, about 6 replicates per variant detect a 5-point gain, and about 16 detect 3 points [dashboards/noise.py]. A single leaderboard comparison cannot settle a 3-task gain.
 
 ## 8. Related work
 
-SWE-bench (Jimenez et al., 2024) studies repository-level issue resolution. This competition uses a similar task format with private repositories. SWE-agent (Yang et al., 2024) showed that the agent-computer interface affects resolution. Agentless (Xia et al., 2024) localizes in stages: file, function, then edit. It does so without an agent loop. As a strong, simple baseline, it fits our result that text retrieval is hard to beat. Graph-based localization includes RepoGraph (Ouyang et al., 2024), CodexGraph (Liu et al., 2024), and LocAgent (Chen et al., 2025). Compared with those systems, we test retrieval on gold nodes without a model and measure co-change. BM25 follows Robertson and Zaragoza (2009). *(TODO before submit: verify each citation's venue and year.)*
+SWE-bench (Jimenez et al., 2024) studies repository-level issue resolution. This competition uses a similar task format with private repositories. SWE-agent (Yang et al., 2024) showed that the agent-computer interface affects resolution. Agentless (Xia et al., 2024) localizes in stages: file, function, then edit. It does so without an agent loop. As a strong, simple baseline, it fits our result that text retrieval is hard to beat. Graph-based localization includes RepoGraph (Ouyang et al., 2024), CodexGraph (Liu et al., 2024), and LocAgent (Chen et al., 2025). Compared with those systems, we test retrieval on gold nodes without a model and measure co-change. BM25 follows Robertson and Zaragoza (2009).
 
 ## 9. Limitations
 
@@ -92,3 +92,13 @@ SWE-bench (Jimenez et al., 2024) studies repository-level issue resolution. This
 ## 10. Reproducibility
 
 Code: `github.com/leejianrong/gemma-4-dev-agent` (Apache-2.0). The analyses run as free Kaggle CPU kernels on the attached competition data (`pod/gold_map.py`, `pod/localize.py`, `pod/cochange.py`). Run `make eda` to regenerate the figures and `make run-eval` to run the harness. The submission bundle has a hash (sha256 d66442e9…). Every row in `experiments/runs.csv` records that hash. We have not released derived annotations pending a check of the dataset terms (A-register, GEM-22).
+
+## References
+
+- Jimenez et al. SWE-bench: Can language models resolve real-world GitHub issues? ICLR 2024. arXiv:2310.06770.
+- Yang et al. SWE-agent: Agent-computer interfaces enable automated software engineering. NeurIPS 2024. arXiv:2405.15793.
+- Xia et al. Agentless: Demystifying LLM-based software engineering agents. 2024. arXiv:2407.01489.
+- Ouyang et al. RepoGraph: Enhancing AI software engineering with repository-level code graph. arXiv:2410.14684.
+- Liu et al. CodexGraph: Bridging large language models and code repositories via code graph databases. NAACL 2025. arXiv:2408.03910.
+- Chen et al. LocAgent: Graph-guided LLM agents for code localization. ACL 2025. arXiv:2503.09089.
+- Robertson and Zaragoza. The probabilistic relevance framework: BM25 and beyond. Foundations and Trends in Information Retrieval, 2009.
