@@ -166,6 +166,7 @@ def test_end_to_end_run_maps_validates_and_reports(tmp_path):
     assert rep["text_method_subset_of_line_method"] == rep["text_method_hunks_compared"] == 1
     rows = list(csv.DictReader(open(tmp_path / "o" / "gold_nodes.csv")))
     assert [r["node_id"] for r in rows] == ["pkg.mod.helper"] and rows[0]["text_agree"] == "1.0"
+    assert rows[0]["in_degree"] == "0" and rows[0]["graph_nodes"] == str(len(IDS))
     assert "pkg_1" in (tmp_path / "o" / "mapping_samples.md").read_text()
 
 
