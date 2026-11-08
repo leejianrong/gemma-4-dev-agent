@@ -90,3 +90,10 @@ kernel-subcheck: ## Build the Kaggle kernel that diffs submission/ against the s
 pull-subcheck: ## Download the submission-check output into data/subcheck/
 	mkdir -p data/subcheck
 	kaggle kernels output "$(KAGGLE_USER)/gemma-4-submission-check" -p data/subcheck --force
+
+.PHONY: kernel-eval run-eval
+kernel-eval: ## Build the GPU eval-runner kernel. EVAL_TASKS=5|all|id,id EVAL_RUN_ID EVAL_MODEL EVAL_CONCURRENCY EVAL_MAX_MIN
+	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" eval
+
+run-eval: kernel-eval ## Push the eval runner to Kaggle GPU (uses quota; capped by EVAL_TIMEOUT_S, default 7200)
+	kaggle kernels push -p kaggle/eval_kernel -t $${EVAL_TIMEOUT_S:-7200} --accelerator $${EVAL_MACHINE:-NvidiaL4}
