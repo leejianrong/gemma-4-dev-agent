@@ -34,3 +34,4 @@ kaggle/localize_kernel/
 kaggle/cochange_kernel/
 kaggle/subcheck_kernel/
 kaggle/eval_kernel/
+kaggle/writeup_notebook/kernel.py
