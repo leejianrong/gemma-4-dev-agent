@@ -8,9 +8,13 @@ Usage: build_kernel.py USERNAME
 
 from __future__ import annotations
 
+import datetime
+import hashlib
 import json
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -119,6 +123,13 @@ KINDS = {
         ["gold_map.py"],
         "gm_main()",
     ),
+    "eval": (
+        "gemma-4-eval-runner",
+        "Gemma 4 Eval Runner",
+        "eval_kernel",
+        ["eval_runner.py"],
+        "er_main()",
+    ),
     "subcheck": (
         "gemma-4-submission-check",
         "Gemma 4 Submission Check",
@@ -144,6 +155,39 @@ KINDS = {
 TITLE = "Gemma 4 Graph Explore"
 
 
+def submission_files() -> dict[str, str]:
+    root = ROOT / "submission"
+    return {
+        str(p.relative_to(root)): p.read_text(encoding="utf-8")
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+def eval_params(files: dict[str, str]) -> dict:
+    """Run parameters from EVAL_* environment variables, fixed into the kernel at build time."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import submission as sub  # noqa: PLC0415
+
+    with tempfile.TemporaryDirectory() as tmp:
+        zpath = sub.build_zip(ROOT / "submission", Path(tmp) / "s.zip")
+        sha = hashlib.sha256(zpath.read_bytes()).hexdigest()
+    m = re.search(r"^\s*model:\s*(\S+)", files["agent.yaml"], re.MULTILINE)
+    spec = os.environ.get("EVAL_TASKS", "5")
+    tasks = "all" if spec == "all" else int(spec) if spec.isdigit() else spec.split(",")
+    today = datetime.date.today().isoformat()
+    return {
+        "run_id": os.environ.get("EVAL_RUN_ID", f"eval-{today}"),
+        "tasks": tasks,
+        "model": os.environ.get("EVAL_MODEL", m.group(1) if m else ""),
+        "concurrency": int(os.environ.get("EVAL_CONCURRENCY", "1")),
+        "max_minutes": float(os.environ.get("EVAL_MAX_MIN", "90")),
+        "seed": int(os.environ.get("EVAL_SEED", "0")),
+        "sandbox": os.environ.get("EVAL_SANDBOX", "subprocess"),
+        "zip_sha256": sha,
+    }
+
+
 def build(username: str, kind: str = "explore") -> Path:
     global OUT, SLUG, TITLE
     SLUG, TITLE, outdir, extras, entry = KINDS[kind]
@@ -152,18 +196,16 @@ def build(username: str, kind: str = "explore") -> Path:
     for name in extras:
         src += "\n" + _inline(name).replace("from __future__ import annotations\n", "")
     OUT.mkdir(parents=True, exist_ok=True)
-    if (
-        kind == "subcheck"
-    ):  # our submission travels inside the kernel; nothing is uploaded elsewhere
-        files = {
-            str(p.relative_to(ROOT / "submission")): p.read_text(encoding="utf-8")
-            for p in sorted((ROOT / "submission").rglob("*"))
-            if p.is_file()
-        }
+    params = None
+    if kind in ("subcheck", "eval"):  # our submission travels inside the kernel
+        files = submission_files()
         src += f"\nSUBMISSION_FILES = {files!r}\n"
+        if kind == "eval":
+            params = eval_params(files)
+            src += f"EVAL_PARAMS = {params!r}\n"
     (OUT / "kernel.py").write_text(src + WRAPPER.replace("__ENTRY__", entry), encoding="utf-8")
     meta = {
-        "id": f"{username}/{SLUG}",
+        "id": f"{username}/{os.environ.get('EVAL_SLUG', SLUG) if kind == 'eval' else SLUG}",
         "title": TITLE,
         "code_file": "kernel.py",
         "language": "python",
@@ -177,6 +219,11 @@ def build(username: str, kind: str = "explore") -> Path:
         "kernel_sources": [],
         "model_sources": [],
     }
+    if kind == "eval":
+        meta["enable_gpu"] = "true"
+        meta["machine_shape"] = os.environ.get("EVAL_MACHINE", "NvidiaL4x4")
+        meta["dataset_sources"] = ["metric/gemma-4-developer-agent-wheelhouse"]
+        meta["model_sources"] = [f"google/gemma-4/other/{params['model']}/2"]
     (OUT / "kernel-metadata.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     return OUT / "kernel.py"
 
