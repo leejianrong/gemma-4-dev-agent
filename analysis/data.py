@@ -25,3 +25,22 @@ def path(name: str) -> Path:
 def load(name: str) -> pd.DataFrame:
     """Read one table; .csv.gz is handled by pandas from the extension."""
     return pd.read_csv(path(name))
+
+
+def load_in(folder: str, name: str) -> pd.DataFrame:
+    """Read a table from data/<folder>/ (localize, cochange, map), or $DATA_ROOT/<folder>/."""
+    p = Path(os.environ.get("DATA_ROOT", "data")) / folder / name
+    if not p.is_file():
+        raise FileNotFoundError(
+            f"{p} not found. Run `make pull-{folder if folder != 'map' else 'map'}` first."
+        )
+    return pd.read_csv(p)
+
+
+def report_in(folder: str, name: str = "report.json") -> dict:
+    import json
+
+    p = Path(os.environ.get("DATA_ROOT", "data")) / folder / name
+    if not p.is_file():
+        raise FileNotFoundError(f"{p} not found. Run `make pull-{folder}` first.")
+    return json.loads(p.read_text())
