@@ -2,38 +2,40 @@
 
 *Subtitle: BM25 beats graph and embedding search at finding the edit site, call-graph neighbours predict the sibling edits, and a 58-task leaderboard cannot resolve a 3-task gain.*
 
-Source tags in square brackets point to rows in `docs/QUESTIONS.md` (A-numbers), to `experiments/runs.csv` (run ids) or to figures in `figures/eda/`. Every number below has a tag.
+Square-bracket source tags refer to rows in `docs/QUESTIONS.md` (A-numbers), run IDs in `experiments/runs.csv`, or figures in `figures/eda/`. Every number below has a tag.
 
 ## Abstract
 
-Code-graph and embedding tools are widely assumed to help software-engineering agents find where to edit. We test that assumption on the public set of the Gemma 4 Developer Agent competition: 129 real bug-fix tasks from four Python libraries, each shipped with a call graph and 256-d node embeddings. We map every gold-patch hunk to a graph node exactly, using the old-file line numbers (442 hunks mapped, 164 module-level, 26 in new files, 21 in async functions) [A24]. Then we measure three things without a language model in the loop. First, plain BM25 on the issue text puts a gold node in its top 10 for 55% of 116 tasks; appending graph neighbours gives 54% and embedding neighbours 50% [A28]. Second, the call graph does carry signal about *other* edits: neighbours one hop from an edited node contain 23% of the remaining gold nodes at 23% precision, about 39 times chance, and the same module contains 62% [A29]. Third, the released graph has no node for any `async def` (0 of 239) [A27], yet this costs little for localization (BM25 recall@10 43% on sync functions against 41% with async counted as unreachable) [A35]. We also give a noise model for the competition's small leaderboard and an open pipeline for running the official harness from a Kaggle kernel [A33, A34]. A first end-to-end baseline run resolved 3 of 30 tasks [baseline30-2026-11-08].
+We study code-graph retrieval on 129 public Gemma 4 Developer Agent tasks from four Python libraries. Each task includes a call graph and 256-d node embeddings. We map patches to nodes with old-file line numbers: 442 map to nodes, 164 are module-level, 26 are in new files, and 21 hit async functions [A24]. We measure retrieval without a language model. BM25 finds a gold node in its top 10 on 55% of 116 mapped tasks. Adding graph neighbours gives 54%; adding embedding neighbours gives 50% [A28]. After one edit, one-hop call neighbours find 23% of the remaining gold nodes at 23% precision, about 39 times chance. The same module contains 62% [A29]. The graph omits all `async def` nodes (0 of 239) [A27]. BM25 recall@10 changes little when we count async targets as unreachable: 43% on sync functions versus 41% with async targets included [A35]. We describe leaderboard noise and a Kaggle harness runner [A33, A34]. The first end-to-end baseline resolved 3 of 30 tasks [baseline30-2026-11-08].
 
 ## 1. Introduction
 
-Agents that fix bugs in unfamiliar repositories spend most of their budget finding the right code. Recent systems add structure to help: repository graphs, call-graph queries and learned embeddings. The Gemma 4 Developer Agent competition ships exactly these as tools: three graph and embedding tools beside six file and shell tools, with a 32k-token context and a fixed 12-hour budget for about 120 hidden tasks [docs/COMPETITION.md]. Its public data lets us ask a narrow, answerable question: given the issue text, how often does each retrieval method name the node the real fix edited, and what does the graph add beyond text?
+Bug-fixing agents spend most of their budget finding the relevant code in unfamiliar repositories. Graph and embedding tools are widely assumed to help. Some agents use repository graphs, call-graph queries, or learned embeddings. The Gemma 4 Developer Agent competition provides three graph and embedding tools alongside six file and shell tools. It gives agents a 32k-token context and a fixed 12-hour budget for about 120 hidden tasks [docs/COMPETITION.md]. The public data lets us compare retrieval methods: given an issue, which method finds a node edited by the real fix? We also ask what the graph adds after the first edit site is known.
 
-Contributions:
+We make six contributions:
 
-1. An exact mapping from gold patches to graph nodes for 129 tasks, with validation counts [A24].
-2. A localization comparison (BM25, graph expansion, embedding expansion, random) with the target split by kind [A28, A35].
-3. A leave-one-out co-change analysis showing which structural relations predict sibling edits [A29].
-4. A measured defect in the released graph (no async nodes) and an estimate of what it costs [A27, A35].
-5. A noise model for small-n agent leaderboards [dashboards/noise.py].
-6. A recipe and runner for the official harness on Kaggle GPUs, with the trace schema as observed [A33, A34].
+1. We map gold patches to graph nodes exactly for 129 tasks and report validation counts [A24].
+2. We compare BM25, graph expansion, embedding expansion, and random retrieval, including results by target kind [A28, A35].
+3. We use a leave-one-out co-change analysis to test which structural relations predict other edited nodes [A29].
+4. We measure the missing async nodes in the released graph and estimate their effect [A27, A35].
+5. We model noise in small-n agent leaderboards [dashboards/noise.py].
+6. We give a runner for the official Kaggle harness and describe the trace schema we observed [A33, A34].
 
 ## 2. Data
 
-The public set has 129 tasks: fastapi 67, rich 48, requests 13, httpx 1 [A23]. Graphs hold only `calls` edges (452k over 367,985 nodes in 127 graphs); nodes carry an id, name and source text but no line numbers [A23, A25]. Most nodes are not library code: in fastapi about 9% are the package itself and about two thirds are tests, while requests, rich and httpx are 39%, 55% and 56% library [A26]. We therefore score on library nodes only and report the all-node pool separately. Issues are short (median 58 words), none carries a traceback or hint text [A25].
+The public set contains 129 tasks: fastapi 67, rich 48, requests 13, and httpx 1 [A23]. The 127 graphs contain 367,985 nodes and 452k edges, all labelled `calls`. Each node has an ID, a name, and source text, but no line numbers [A23, A25]. Many nodes are outside the library code. In fastapi, about 9% belong to the package and about two thirds are tests. The library shares are 39% for requests, 55% for rich, and 56% for httpx [A26]. We score library nodes and report the all-node pool separately. Issues have a median length of 58 words. None includes a traceback or hint text [A25].
 
-**Embeddings.** The vector is a function of node text: 22% of nodes share a vector with another node and 99.5% of those groups have identical text. Raw cosine is nearly uninformative (random pairs average 0.79; 97% of nodes have a neighbour at 0.99 or higher). After mean-centring, random pairs average 0.04 and 5 of 256 components carry 90% of the variance. We use mean-centred vectors throughout [A26; figure eda_03].
+**Embeddings.** A node's vector depends on its text. Some 22% of nodes share a vector with another node; 99.5% of those groups have identical text. Raw cosine scores separate nodes poorly: random pairs average 0.79, and 97% of nodes have a neighbour scoring at least 0.99. After we subtract the mean vector, random pairs average 0.04. Just 5 of 256 components then carry 90% of the variance. We use these mean-centred vectors throughout [A26; figure eda_03].
 
 ## 3. Mapping patches to nodes
 
-For each hunk we walk the *old* file's `ast` line ranges at the base commit and credit each changed line to the innermost def or class. Validation: 632 of 632 library hunks match the old file at the computed lines; 318 of 318 function nodes contain all their removed lines in the graph text; 470 of 470 mapped nodes have a graph header naming them [A24]. Results: 442 hunks map to a node, 164 are module-level, 26 are new files and 21 hit async functions. 116 of 129 tasks have at least one mapped node and 52 have two or more [A24]. The earlier text-matching method was a subset of this mapping for only 353 of 430 hunks, which is why we replaced it [A24].
+We use the base commit and the *old* file for each patch hunk. We walk its `ast` line ranges and assign each changed line to the innermost function or class. We checked the mapping in three ways. All 632 library hunks match the old file at the computed lines. All 318 function nodes contain their removed lines in the graph text. All 470 mapped nodes have a graph header that names them [A24].
+
+We map 442 hunks to a node. Another 164 are module-level, 26 are in new files, and 21 hit async functions. At least one node maps for 116 of 129 tasks; 52 tasks have two or more mapped nodes [A24]. An earlier text-matching method gave a subset of this mapping for only 353 of 430 hunks, so we replaced it [A24].
 
 ## 4. Localization
 
-We rank library nodes by BM25 over the issue text and measure whether a gold node is in the top k (hit@k) over the 116 mapped tasks. Methods: BM25; BM25 then the 1-hop graph neighbours of the top 3 hits appended after the top 5; the same with mean-centred embedding neighbours; a boost variant that adds neighbour links to the score; and random.
+We rank library nodes with BM25 over the issue text. For each of the 116 mapped tasks, hit@k means that at least one gold node appears in the top k. We compare BM25 with two expansion methods, a score-boost method, and random ranking. Graph expansion adds the 1-hop neighbours of the top 3 BM25 hits after the top 5. Embedding expansion does the same with mean-centred embedding neighbours. The boost method adds neighbour links to the score.
 
 | Method | hit@10 (library pool) |
 |---|---|
@@ -42,13 +44,13 @@ We rank library nodes by BM25 over the issue text and measure whether a gold nod
 | BM25, then embedding | 50% |
 | Random | 0% |
 
-BM25 recall at 1, 5, 10 is 0.11, 0.36, 0.42, and hit@10 is 0.51 for fastapi, 0.53 for rich and 0.82 for requests. Over all nodes (tests and docs included) BM25 hit@10 falls to 35%. The boost variant is worse at small k (recall@1 0.05 against 0.11) [A28; figure eda_04]. Parameters were not tuned (3 seeds, head 5, lambda 0.5), so the ordering BM25 ≥ graph > embedding is a finding about defaults, not a bound.
+BM25 recall at 1, 5, and 10 is 0.11, 0.36, and 0.42. Its hit@10 is 0.51 for fastapi, 0.53 for rich, and 0.82 for requests. When we include tests and docs, BM25 hit@10 falls to 35%. The boost method also does worse at small k: recall@1 is 0.05 versus 0.11 for BM25 [A28; figure eda_04]. We did not tune the settings (3 seeds, head 5, lambda 0.5). Thus BM25 ≥ graph > embedding describes these defaults, not a bound.
 
-**By target kind.** The graph has 380 sync function nodes and 90 class nodes among the scored targets, plus 18 library hunks in 8 tasks that fall in async functions [A35]. Graph expansion does not help on function nodes (40% against 43%) but helps on class nodes (36% against 25%, 33 tasks). Expansion is useful when the target is a class and the issue names its methods [A35; figure eda_07].
+**By target kind.** We score 380 sync function nodes and 90 class nodes. Another 18 library hunks in 8 tasks fall in async functions [A35]. Graph expansion does not help on function targets (40% versus 43% for BM25). It helps on class targets (36% versus 25%, across 33 tasks). Expansion helps when the target is a class and the issue names its methods [A35; figure eda_07].
 
 ## 5. Co-change: what the graph does predict
 
-Localization finds one edit site; patches often touch several. We take 50 tasks with 2 to 20 library gold nodes, reveal one gold node and ask which candidate sets contain the others (leave-one-out).
+Many patches edit more than one site. We take 50 tasks with 2 to 20 library gold nodes. For each task, we reveal one gold node and test which candidate sets contain the others. This is a leave-one-out analysis.
 
 | Candidate set | size (nodes) | recall | precision |
 |---|---|---|---|
@@ -58,33 +60,35 @@ Localization finds one edit site; patches often touch several. We take 50 tasks 
 | 2-hop | | 57% | 12% |
 | 10 embedding neighbours | 10 | 20% | 6% |
 
-One-hop neighbours beat chance by a median 39 times. Two hops add size without precision, and embedding neighbours add little over the call graph [A29; figure eda_05]. The practical reading is a prompt-level one: after the first edit, check the edited function's callers and its module neighbours. We have not tested this with a model; it is the first planned ablation.
+One-hop call neighbours beat chance by a median 39 times. Two hops increase the candidate set but lose precision. Embedding neighbours add little beyond the call graph [A29; figure eda_05]. After the first edit, an agent could check callers and other nodes in the same module. We have not tested that advice with a model; it is our first planned ablation.
 
 ## 6. The async hole
 
-In the files that gold patches touch, 0 of 239 async functions have a graph node, against 4,646 of 4,646 sync ones [A27]. FastAPI's request handling is mostly async, so the three graph tools cannot return those functions, and 41 hunks fall back to a parent node. The graph also strips decorators and trailing comments, and class nodes hold only the header [A27]. Because the hidden set is built the same way, this applies to it. Its effect on localization is small: only 18 library hunks in 8 tasks are async, and 3 more tasks edit only async code and cannot be scored. BM25 recall@10 is 43% on sync functions and 41% counting async targets as unreachable [A35]. We report the hole as a property of the benchmark and the cost as small.
+The released graph has no node for any async function in the files touched by gold patches: 0 of 239. It includes 4,646 of 4,646 sync functions in those files [A27]. FastAPI handles most requests asynchronously. Its async functions therefore cannot appear in results from the three graph tools, and 41 hunks fall back to a parent node. The graph also removes decorators and trailing comments. Class nodes contain only the header [A27]. The hidden set is built the same way, so the graph defect applies there too.
+
+The measured localization cost is small. Only 18 library hunks in 8 tasks are async. Another 3 tasks edit only async code and cannot be scored. BM25 recall@10 is 43% on sync functions and 41% when async targets count as unreachable [A35].
 
 ## 7. Running the official harness on Kaggle, and what a score means
 
-**Runner.** We run the competition's own `Evaluator` in a CLI-pushed kernel. Three undocumented settings were needed: `machine_shape` `NvidiaL4` (the spelling `NvidiaL4x4` is silently ignored and gives two T4s, where vLLM refuses bfloat16), the competition's Python 3.12 image, and the wheelhouse and model attached as inputs. Cold start is 108 s for wheels plus 385 s for the model [A33]. The result and trace schema (ATIF v1.7) are in [A34]; we normalise them into a documented contract (`docs/RUN_CONTRACT.md`).
+**Runner.** We run the competition's `Evaluator` in a CLI-pushed Kaggle kernel. It needs three undocumented settings: `machine_shape` set to `NvidiaL4`, the competition's Python 3.12 image, and the wheelhouse and model attached as inputs. Kaggle silently ignores `NvidiaL4x4` and supplies two T4s; vLLM then refuses bfloat16. Cold start takes 108 s for wheels and 385 s for the model [A33]. We observed the result and trace schema (ATIF v1.7) [A34] and normalise them in `docs/RUN_CONTRACT.md`.
 
-**Baseline.** The agent is a reused budget-aware bundle with one agent, no adapter, 8 min, 28 tool calls and 80 turns per task, and the 31B w4a16 base [A31, docs/ATTRIBUTION.md]. On a stratified 30-task sample it resolved 3 (10%): fastapi 2 of 10, rich 1 of 10, requests 0 of 9, httpx 0 of 1. Four tasks hit the session timeout, two the tool budget and one returned an empty patch. The median task took 5.2 minutes, 2.65 hours for 30, or about 10.6 hours projected for 120 tasks run one at a time [baseline30-2026-11-08]. A 5-task smoke run on the same zip resolved 0 [smoke-2026-11-08]. Leaderboard result: PENDING (one submission, zip sha256 d66442e9).
+**Baseline.** We use a reused budget-aware bundle with one agent, no adapter, 8 min, 28 tool calls, 80 turns per task, and the 31B w4a16 base [A31, docs/ATTRIBUTION.md]. On a stratified 30-task sample, it resolves 3 tasks (10%): fastapi 2 of 10, rich 1 of 10, requests 0 of 9, and httpx 0 of 1. Four tasks hit the session timeout, two hit the tool budget, and one returned an empty patch. The median task takes 5.2 minutes. The 30-task run takes 2.65 hours, which projects to about 10.6 hours for 120 tasks run one at a time [baseline30-2026-11-08]. A 5-task smoke run on the same zip resolves 0 [smoke-2026-11-08]. Leaderboard result: PENDING (one submission, zip sha256 d66442e9).
 
-**Noise.** With a baseline near 17% on about 58 public-leaderboard tasks, one score has a 95% band of roughly plus or minus 9.7 points. Assuming per-task variance of 0.05, which reproduces the roughly two-task noise others report, about 6 replicates per variant detect a 5-point gain on the same tasks and about 16 detect 3 points [dashboards/noise.py]. A single leaderboard comparison of two variants therefore says little about a 3-task gain.
+**Noise.** At a baseline near 17% on about 58 public-leaderboard tasks, one score has a 95% band of roughly plus or minus 9.7 points. We assume per-task variance of 0.05, which reproduces the roughly two-task noise others report. On the same tasks, about 6 replicates per variant detect a 5-point gain, and about 16 detect 3 points [dashboards/noise.py]. A single leaderboard comparison cannot settle a 3-task gain.
 
 ## 8. Related work
 
-SWE-bench (Jimenez et al., 2024) frames repository-level issue resolution; this competition uses a similar task format with private repositories. SWE-agent (Yang et al., 2024) showed the effect of the agent-computer interface on resolution. Agentless (Xia et al., 2024) localizes hierarchically (file, then function, then edit) without an agent loop and is a strong, simple baseline, which fits our finding that text retrieval is hard to beat. Graph-based localization includes RepoGraph (Ouyang et al., 2024), CodexGraph (Liu et al., 2024) and LocAgent (Chen et al., 2025); our contribution relative to them is a controlled, model-free comparison on gold nodes and the co-change result. BM25 follows Robertson and Zaragoza (2009). *(TODO before submit: verify each citation's venue and year.)*
+SWE-bench (Jimenez et al., 2024) studies repository-level issue resolution. This competition uses a similar task format with private repositories. SWE-agent (Yang et al., 2024) showed that the agent-computer interface affects resolution. Agentless (Xia et al., 2024) localizes in stages: file, function, then edit. It does so without an agent loop. As a strong, simple baseline, it fits our result that text retrieval is hard to beat. Graph-based localization includes RepoGraph (Ouyang et al., 2024), CodexGraph (Liu et al., 2024), and LocAgent (Chen et al., 2025). Compared with those systems, we test retrieval on gold nodes without a model and measure co-change. BM25 follows Robertson and Zaragoza (2009). *(TODO before submit: verify each citation's venue and year.)*
 
 ## 9. Limitations
 
-- **Small public set.** 129 tasks, 116 with a mapped node, and three of the four repos have 13 or fewer tasks (httpx has 1). Per-repo and per-kind numbers carry large error bands; most are from n under 50.
-- **Noise.** Agent results at this size cannot separate gains of one to three tasks (Section 7). The 3/30 baseline has a wide interval and we do not claim it differs from 17%.
-- **No model in the loop for Sections 4 to 6.** The agent also uses grep, `read_file` and its own judgement, which our retrieval numbers do not model.
-- **Untuned.** BM25 and expansion parameters were not tuned; the graph methods might improve with tuning.
-- **Mapping.** The node mapping is exact on the old file but ignores module-level hunks (164) and new files (26).
+- **Small public set.** Of 129 tasks, 116 have a mapped node. Three of the four repos have 13 or fewer tasks; httpx has 1. Most per-repo and per-kind results use n under 50, so their error bands are large.
+- **Noise.** At this size, agent scores cannot separate gains of one to three tasks (Section 7). The 3/30 baseline has a wide interval. We do not claim it differs from 17%.
+- **No model in the loop for Sections 4 to 6.** An agent also uses grep, `read_file`, and its own judgement. Our retrieval measures do not capture that behaviour.
+- **Untuned.** We did not tune BM25 or expansion settings. Tuning might improve the graph methods.
+- **Mapping.** Our mapping uses exact old-file lines but omits module-level hunks (164) and new files (26).
 - **Hidden set.** Private repos may differ from these four. We hold out one repo (rich) when judging agent changes.
 
 ## 10. Reproducibility
 
-Code: `github.com/leejianrong/gemma-4-dev-agent` (Apache-2.0). Analyses run as free Kaggle CPU kernels over the attached competition data (`pod/gold_map.py`, `pod/localize.py`, `pod/cochange.py`); figures regenerate with `make eda`; the harness runs with `make run-eval`. The submission bundle is hashed (sha256 d66442e9…) and every run row in `experiments/runs.csv` carries that hash. Derived annotations are not released until the dataset terms are checked (A-register, GEM-22).
+Code: `github.com/leejianrong/gemma-4-dev-agent` (Apache-2.0). The analyses run as free Kaggle CPU kernels on the attached competition data (`pod/gold_map.py`, `pod/localize.py`, `pod/cochange.py`). Run `make eda` to regenerate the figures and `make run-eval` to run the harness. The submission bundle has a hash (sha256 d66442e9…). Every row in `experiments/runs.csv` records that hash. We have not released derived annotations pending a check of the dataset terms (A-register, GEM-22).
