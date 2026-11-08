@@ -12,6 +12,7 @@ FIGURE_MODULES: list[str] = [  # appended by each figure card, in reading order
     "eda_localization",
     "eda_cochange",
     "eda_async_graph",
+    "eda_async_split",
 ]
 
 
