@@ -132,3 +132,13 @@ def test_real_smoke_run_traces_all_convert_and_validate(tmp_path):
     limits = {"max_tool_calls": 28, "max_time_minutes": 8, "max_turns": 80}
     out = ha.convert_run(REAL, limits, tmp_path)
     assert out and all(runs.validate_trace(json.loads(p.read_text())) == [] for p in out)
+
+
+def test_calls_past_the_budget_are_not_counted_so_real_overshoot_traces_validate():
+    steps = [
+        call(i, "read_file", {"filepath": "a.py"}, {"status": "ok"}, i, i) for i in range(1, 7)
+    ]
+    t = ha.convert({"steps": steps}, {**ROW, "status": "unresolved"}, LIMITS)
+    counted = [s for s in t["steps"] if s["kind"] == "tool" and s["counted"]]
+    assert len(counted) == LIMITS["max_tool_calls"]
+    assert runs.validate_trace(t) == []

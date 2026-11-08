@@ -105,6 +105,12 @@ def convert(trace: dict, row: dict, limits: dict) -> dict:
                 "error": str(err) if failed and err else None,
             }
             add(tool)
+    budget = int(limits["max_tool_calls"])
+    used = 0
+    for st in steps:  # the harness stops charging at the cap; later calls were not budgeted
+        if st["kind"] == "tool" and st.get("counted"):
+            used += 1
+            st["counted"] = used <= budget
     patch_chars = int(row["patch_chars"] or 0)
     outcome = {
         "resolved": row["resolved"] in (1, "1", True),
