@@ -22,6 +22,7 @@ if "load_graph" not in globals():  # standalone; inside the kernel explore.py is
 
 LL_NON_LIB = ("tests", "test", "docs_src", "docs", "scripts", "examples")
 LL_KS = (1, 5, 10)
+LL_TOP = 20
 LL_SEEDS = 3
 LL_LAMBDA = 0.5
 LL_KNN = 10
@@ -210,6 +211,8 @@ def ll_task_rows(np, task: dict, graph: dict, vectors: dict | None, gold: set[st
                     "n_gold_in_pool": len(target),
                     "n_gold_total": len(gold),
                     **ll_metrics(ranked, target),
+                    "gold": "|".join(sorted(target)),
+                    "top": "|".join(ranked[:LL_TOP]),
                 }
             )
     return rows

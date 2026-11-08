@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 import indah
 
-from dashboards.data import RunData
+from dashboards.data import RunData, table
 
 RUN_COLUMNS = ["run_id", "variant", "seed", "subset", "n_tasks", "n_resolved", "resolution_rate"]
 
@@ -22,7 +22,6 @@ def overview(data: RunData):
         if data.is_fixture
         else f"Loaded {len(data.runs)} runs from {', '.join(str(p) for p in data.sources)}."
     )
-    table = [{c: r.get(c, "") for c in RUN_COLUMNS} for r in data.runs]
     return indah.Column(
         children=[
             indah.Text(f"# Runs overview\n\n{banner}", markdown=True),
@@ -34,9 +33,14 @@ def overview(data: RunData):
                     indah.Stat(f"{100 * best:.1f}%", label="best resolution rate"),
                 ],
             ),
-            indah.DataFrame(table, label="Runs"),
+            indah.DataFrame(table(data.runs, RUN_COLUMNS), label="Runs"),
         ]
     )
 
 
-PAGES: list[tuple[str, Callable[[RunData], object]]] = [("Overview", overview)]
+from dashboards import localization  # noqa: E402
+
+PAGES: list[tuple[str, Callable[[RunData], object]]] = [
+    ("Overview", overview),
+    ("Localization", localization.page),
+]

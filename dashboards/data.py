@@ -48,3 +48,8 @@ def load(root: Path | None = None) -> RunData:
         if (d / "task_results.csv").is_file():
             tasks += _read(d / "task_results.csv")
     return RunData(runs, tasks, dirs, fixture, [d / "traces" for d in dirs])
+
+
+def table(rows: list[dict], columns: list[str]) -> dict:
+    """A DataFrame source that also works with no rows (indah cannot infer columns from none)."""
+    return {"columns": columns, "rows": [[r.get(c, "") for c in columns] for r in rows]}

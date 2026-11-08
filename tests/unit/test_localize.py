@@ -140,4 +140,6 @@ def test_end_to_end_run_writes_tasks_summary_and_report(tmp_path):
         if r["repo"] == "all repos" and r["pool"] == "library" and r["method"] == "bm25"
     ]
     assert pooled[0]["recall@1"] == "1.0" and pooled[0]["tasks"] == "1"
-    assert (tmp_path / "o" / "localize_tasks.csv").exists()
+    tasks = list(csv.DictReader(open(tmp_path / "o" / "localize_tasks.csv")))
+    bm = next(r for r in tasks if r["method"] == "bm25" and r["pool"] == "library")
+    assert bm["gold"] == "pkg.table.render" and bm["top"].split("|")[0] == "pkg.table.render"
