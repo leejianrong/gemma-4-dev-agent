@@ -1,0 +1,124 @@
+{
+ "schema_version": "1",
+ "run_id": "fx_baseline",
+ "instance_id": "fastapi_0001",
+ "repo": "fastapi/fastapi",
+ "outcome": {
+  "resolved": true,
+  "status": "resolved",
+  "test_exit_code": 0,
+  "patch_chars": 840,
+  "duration_s": 41.0,
+  "error": null
+ },
+ "limits": {
+  "max_tool_calls": 100,
+  "max_time_s": 3600,
+  "max_turns": 500,
+  "context_window": 32768
+ },
+ "steps": [
+  {
+   "i": 0,
+   "t_s": 4.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 2400,
+   "duration_s": 4,
+   "prompt_tokens": 2400,
+   "completion_tokens": 180
+  },
+  {
+   "i": 1,
+   "t_s": 5.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 2600,
+   "duration_s": 1,
+   "tool": "grep",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900,
+   "paths": [
+    "fastapi/routing.py"
+   ]
+  },
+  {
+   "i": 2,
+   "t_s": 10.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 3100,
+   "duration_s": 5,
+   "prompt_tokens": 3100,
+   "completion_tokens": 180
+  },
+  {
+   "i": 3,
+   "t_s": 11.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 4200,
+   "duration_s": 1,
+   "tool": "read_file",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900,
+   "paths": [
+    "fastapi/routing.py"
+   ],
+   "nodes": [
+    "fastapi.routing.APIRoute"
+   ]
+  },
+  {
+   "i": 4,
+   "t_s": 20.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 4800,
+   "duration_s": 9,
+   "prompt_tokens": 4800,
+   "completion_tokens": 180
+  },
+  {
+   "i": 5,
+   "t_s": 21.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 5000,
+   "duration_s": 1,
+   "tool": "edit_file",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900,
+   "paths": [
+    "fastapi/routing.py"
+   ]
+  },
+  {
+   "i": 6,
+   "t_s": 33.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 5600,
+   "duration_s": 12,
+   "tool": "run_command",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900
+  },
+  {
+   "i": 7,
+   "t_s": 34.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 5600,
+   "duration_s": 1,
+   "tool": "submit_patch",
+   "counted": false,
+   "args_chars": 60,
+   "result_chars": 900
+  }
+ ]
+}

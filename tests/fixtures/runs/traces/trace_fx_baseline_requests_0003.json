@@ -1,0 +1,57 @@
+{
+ "schema_version": "1",
+ "run_id": "fx_baseline",
+ "instance_id": "requests_0003",
+ "repo": "psf/requests",
+ "outcome": {
+  "resolved": false,
+  "status": "empty_patch",
+  "test_exit_code": null,
+  "patch_chars": 0,
+  "duration_s": 22.0,
+  "error": null
+ },
+ "limits": {
+  "max_tool_calls": 100,
+  "max_time_s": 3600,
+  "max_turns": 500,
+  "context_window": 32768
+ },
+ "steps": [
+  {
+   "i": 0,
+   "t_s": 6.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 2400,
+   "duration_s": 6,
+   "prompt_tokens": 2400,
+   "completion_tokens": 180
+  },
+  {
+   "i": 1,
+   "t_s": 7.0,
+   "kind": "tool",
+   "ok": true,
+   "context_tokens": 3900,
+   "duration_s": 1,
+   "tool": "read_file",
+   "counted": true,
+   "args_chars": 60,
+   "result_chars": 900,
+   "paths": [
+    "requests/models.py"
+   ]
+  },
+  {
+   "i": 2,
+   "t_s": 15.0,
+   "kind": "model",
+   "ok": true,
+   "context_tokens": 4100,
+   "duration_s": 8,
+   "prompt_tokens": 4100,
+   "completion_tokens": 180
+  }
+ ]
+}

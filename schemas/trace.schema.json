@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gemma-4-dev-agent/trace/1",
+  "title": "Per-task agent trace, normalised from the harness SessionTrace",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "instance_id", "repo", "outcome", "limits", "steps"],
+  "properties": {
+    "schema_version": {"const": "1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "instance_id": {"type": "string", "minLength": 1},
+    "repo": {"type": "string", "minLength": 1},
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resolved", "status", "patch_chars", "duration_s"],
+      "properties": {
+        "resolved": {"type": "boolean"},
+        "status": {"enum": ["resolved", "unresolved", "empty_patch", "time_limit", "tool_budget", "turn_budget", "model_timeout", "error"]},
+        "test_exit_code": {"type": ["integer", "null"]},
+        "patch_chars": {"type": "integer", "minimum": 0},
+        "duration_s": {"type": "number", "minimum": 0},
+        "error": {"type": ["string", "null"]}
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_tool_calls", "max_time_s", "max_turns"],
+      "properties": {
+        "max_tool_calls": {"type": "integer", "minimum": 1},
+        "max_time_s": {"type": "number", "exclusiveMinimum": 0},
+        "max_turns": {"type": "integer", "minimum": 1},
+        "context_window": {"type": "integer", "minimum": 1}
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["i", "t_s", "kind"],
+        "properties": {
+          "i": {"type": "integer", "minimum": 0},
+          "t_s": {"type": "number", "minimum": 0, "description": "seconds since the task started"},
+          "kind": {"enum": ["model", "tool"]},
+          "tool": {"type": ["string", "null"], "description": "tool name for kind=tool"},
+          "counted": {"type": "boolean", "description": "tool call counts against max_tool_calls"},
+          "ok": {"type": "boolean"},
+          "args_chars": {"type": "integer", "minimum": 0},
+          "result_chars": {"type": "integer", "minimum": 0},
+          "duration_s": {"type": "number", "minimum": 0},
+          "prompt_tokens": {"type": ["integer", "null"], "minimum": 0},
+          "completion_tokens": {"type": ["integer", "null"], "minimum": 0},
+          "context_tokens": {"type": ["integer", "null"], "minimum": 0, "description": "tokens in the context after this step"},
+          "paths": {"type": "array", "items": {"type": "string"}, "description": "repo files read or edited"},
+          "nodes": {"type": "array", "items": {"type": "string"}, "description": "graph node ids queried or returned"},
+          "error": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ dependencies = []
 # notebook image and cannot be installed locally. Keep this file to dev tooling only.
 [dependency-groups]
 dev = [
+    "jsonschema>=4.26.0",
     "numpy>=2.4.6",
     "pytest>=8",
     "ruff>=0.6",
