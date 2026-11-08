@@ -1,23 +1,18 @@
-# PLACEHOLDER written from data/HARNESS_README.md, not yet run through adk_submission.
-# Once the data is downloaded, diff this against data/sample_submission/agent.yaml
-# and run validate_directory in a Kaggle notebook before trusting it.
-name: coder
+# Baseline agent adapted from "Gemma 4 | Budget-Aware Coding Agent v2" (flexonafft), which credits
+# matterhorn3838's "Gemma 4 SuperAgent" (https://www.kaggle.com/code/matterhorn3838/gemma-4-superagent),
+# the official sample_submission prompt and community graph-tool investigations. Files are unchanged
+# from that notebook; see docs/ATTRIBUTION.md. prompts/system.md is kept byte-identical for provenance.
+name: swe_agent
 model: gemma-4-31b-it-qat-w4a16-ct
-description: Fixes a repository issue by editing /workspace and submitting a patch.
 instruction: !include prompts/system.md
 tools:
   - run_command
   - read_file
   - edit_file
   - write_file
-  - submit_patch
   - get_status
+  - submit_patch
   - get_code_neighbors
   - search_similar_code
   - get_code_subgraph
-generate_content_config:
-  temperature: 0.2
-  max_output_tokens: 16384
-  thinking_config:
-    thinking_budget: 4096
-    include_thoughts: true
+generate_content_config: !include configs/sampling.yaml

@@ -7,6 +7,7 @@ notebook before every real submission.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 import zipfile
@@ -85,10 +86,15 @@ def build_zip(root: Path, out: Path) -> Path:
     if errs:
         raise ValueError("; ".join(errs))
     out.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(out, "w") as zf:
         for p in sorted(root.rglob("*")):
             if p.is_file():
-                zf.write(p, p.relative_to(root).as_posix())
+                info = zipfile.ZipInfo(
+                    p.relative_to(root).as_posix(), date_time=(1980, 1, 1, 0, 0, 0)
+                )
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.external_attr = 0o100644 << 16
+                zf.writestr(info, p.read_bytes())
     return out
 
 
@@ -108,7 +114,9 @@ def main(argv: list[str]) -> int:
         except ValueError as e:
             print(f"ERROR: {e}", file=sys.stderr)
             return 1
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
         print(f"wrote {path} ({path.stat().st_size / 2**20:.2f} MiB)")
+        print(f"SHA-256: {digest}")
         return 0
     print("usage: submission.py [check|zip] [dir] [out]", file=sys.stderr)
     return 2

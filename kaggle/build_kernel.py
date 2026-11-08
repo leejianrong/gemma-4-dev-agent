@@ -119,6 +119,13 @@ KINDS = {
         ["gold_map.py"],
         "gm_main()",
     ),
+    "subcheck": (
+        "gemma-4-submission-check",
+        "Gemma 4 Submission Check",
+        "subcheck_kernel",
+        ["sub_check.py"],
+        "sc_main()",
+    ),
     "localize": (
         "gemma-4-localize",
         "Gemma 4 Localize",
@@ -145,6 +152,15 @@ def build(username: str, kind: str = "explore") -> Path:
     for name in extras:
         src += "\n" + _inline(name).replace("from __future__ import annotations\n", "")
     OUT.mkdir(parents=True, exist_ok=True)
+    if (
+        kind == "subcheck"
+    ):  # our submission travels inside the kernel; nothing is uploaded elsewhere
+        files = {
+            str(p.relative_to(ROOT / "submission")): p.read_text(encoding="utf-8")
+            for p in sorted((ROOT / "submission").rglob("*"))
+            if p.is_file()
+        }
+        src += f"\nSUBMISSION_FILES = {files!r}\n"
     (OUT / "kernel.py").write_text(src + WRAPPER.replace("__ENTRY__", entry), encoding="utf-8")
     meta = {
         "id": f"{username}/{SLUG}",
