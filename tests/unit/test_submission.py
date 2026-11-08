@@ -89,3 +89,15 @@ def test_zip_refuses_invalid_dir(tmp_path):
     (d / "agent.yaml").unlink()
     with pytest.raises(ValueError):
         submission.build_zip(d, tmp_path / "o.zip")
+
+
+def test_zip_bytes_do_not_depend_on_file_mtimes_or_build_time(tmp_path):
+    import os
+
+    s = make(tmp_path / "s")
+    a = submission.build_zip(s, tmp_path / "a.zip").read_bytes()
+    for p in s.rglob("*"):
+        if p.is_file():
+            os.utime(p, (1_000_000_000, 1_000_000_000))
+    b = submission.build_zip(s, tmp_path / "b.zip").read_bytes()
+    assert a == b

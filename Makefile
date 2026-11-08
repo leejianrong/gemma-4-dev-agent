@@ -82,3 +82,11 @@ pull-runs: ## Download an eval-runner kernel's runs into data/runs/<KERNEL>/ (ma
 
 dash: ## Serve the indah dashboards on a free port (fixtures when data/runs/ is empty)
 	uv run --group viz --group dash python -m dashboards
+
+.PHONY: kernel-subcheck pull-subcheck
+kernel-subcheck: ## Build the Kaggle kernel that diffs submission/ against the starter sample_submission
+	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" subcheck
+
+pull-subcheck: ## Download the submission-check output into data/subcheck/
+	mkdir -p data/subcheck
+	kaggle kernels output "$(KAGGLE_USER)/gemma-4-submission-check" -p data/subcheck --force
