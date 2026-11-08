@@ -11,6 +11,8 @@ A runs directory holds three things:
 | `task_results.csv` | task in a run | status, resolved, exit code, patch size, tool calls, turns, time, tokens, peak context |
 | `traces/trace_<run_id>_<instance_id>.json` | task in a run | timestamped steps; schema in `schemas/trace.schema.json` |
 
+`task_results.csv` `tool_calls` is the harness's own count; a trace's `counted` steps are ours and can differ (see `analysis/harness_adapter.py`).
+
 Columns are listed in `RUNS_COLUMNS` and `TASK_COLUMNS` in `analysis/runs.py`.
 
 ## Logging a run
