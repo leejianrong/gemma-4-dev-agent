@@ -20,7 +20,7 @@ fmt: ## Apply ruff formatting and safe fixes
 	uv run ruff format .
 
 test: ## Fast unit tests (no GPU, no docker, no data); pulls the viz group on demand
-	uv run --group viz pytest -q
+	uv run --group viz --group dash pytest -q
 
 validate: ## Check submission/ against documented harness limits
 	uv run python scripts/submission.py check submission
@@ -73,3 +73,12 @@ kernel-cochange: ## Build the Kaggle co-change kernel (re-derives gold nodes fir
 pull-cochange: ## Download the co-change kernel output into data/cochange/
 	mkdir -p data/cochange
 	kaggle kernels output "$(KAGGLE_USER)/gemma-4-cochange" -p data/cochange --force
+
+.PHONY: pull-runs dash
+pull-runs: ## Download an eval-runner kernel's runs into data/runs/<KERNEL>/ (make pull-runs KERNEL=slug)
+	@test -n "$(KERNEL)" || { echo "usage: make pull-runs KERNEL=<kernel slug>" >&2; exit 2; }
+	mkdir -p data/runs/$(KERNEL)
+	kaggle kernels output "$(KAGGLE_USER)/$(KERNEL)" -p data/runs/$(KERNEL) --force
+
+dash: ## Serve the indah dashboards on a free port (fixtures when data/runs/ is empty)
+	uv run --group viz --group dash python -m dashboards
