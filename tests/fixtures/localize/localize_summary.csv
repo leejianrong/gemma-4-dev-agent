@@ -1,0 +1,37 @@
+repo,pool,method,tasks,recall@1,hit@1,recall@5,hit@5,recall@10,hit@10,median_best_rank
+Textualize/rich,all,bm25,1,0.0,0.0,1.0,1.0,1.0,1.0,3
+Textualize/rich,all,bm25_embedding,1,0.0,0.0,0.0,0.0,1.0,1.0,8
+Textualize/rich,all,bm25_graph,1,0.0,0.0,1.0,1.0,1.0,1.0,4
+Textualize/rich,all,bm25_then_embedding,1,0.0,0.0,0.0,0.0,1.0,1.0,6
+Textualize/rich,all,bm25_then_graph,1,0.0,0.0,1.0,1.0,1.0,1.0,3
+Textualize/rich,all,random,1,0.0,0.0,1.0,1.0,1.0,1.0,5
+Textualize/rich,library,bm25,1,1.0,1.0,1.0,1.0,1.0,1.0,1
+Textualize/rich,library,bm25_embedding,1,0.0,0.0,0.0,0.0,1.0,1.0,6
+Textualize/rich,library,bm25_graph,1,0.0,0.0,1.0,1.0,1.0,1.0,2
+Textualize/rich,library,bm25_then_embedding,1,0.0,0.0,1.0,1.0,1.0,1.0,4
+Textualize/rich,library,bm25_then_graph,1,1.0,1.0,1.0,1.0,1.0,1.0,1
+Textualize/rich,library,random,1,0.0,0.0,1.0,1.0,1.0,1.0,3
+all repos,all,bm25,3,0.0,0.0,0.8333,1.0,0.8333,1.0,3
+all repos,all,bm25_embedding,3,0.0,0.0,0.0,0.0,0.8333,1.0,8
+all repos,all,bm25_graph,3,0.0,0.0,0.8333,1.0,0.8333,1.0,4
+all repos,all,bm25_then_embedding,3,0.0,0.0,0.0,0.0,0.8333,1.0,6
+all repos,all,bm25_then_graph,3,0.0,0.0,0.8333,1.0,0.8333,1.0,3
+all repos,all,random,3,0.0,0.0,0.8333,1.0,0.8333,1.0,5
+all repos,library,bm25,3,0.8333,1.0,0.8333,1.0,0.8333,1.0,1
+all repos,library,bm25_embedding,3,0.0,0.0,0.0,0.0,0.8333,1.0,6
+all repos,library,bm25_graph,3,0.0,0.0,0.8333,1.0,0.8333,1.0,2
+all repos,library,bm25_then_embedding,3,0.0,0.0,0.8333,1.0,0.8333,1.0,4
+all repos,library,bm25_then_graph,3,0.8333,1.0,0.8333,1.0,0.8333,1.0,1
+all repos,library,random,3,0.0,0.0,0.8333,1.0,0.8333,1.0,3
+fastapi/fastapi,all,bm25,2,0.0,0.0,0.75,1.0,0.75,1.0,3
+fastapi/fastapi,all,bm25_embedding,2,0.0,0.0,0.0,0.0,0.75,1.0,8
+fastapi/fastapi,all,bm25_graph,2,0.0,0.0,0.75,1.0,0.75,1.0,4
+fastapi/fastapi,all,bm25_then_embedding,2,0.0,0.0,0.0,0.0,0.75,1.0,6
+fastapi/fastapi,all,bm25_then_graph,2,0.0,0.0,0.75,1.0,0.75,1.0,3
+fastapi/fastapi,all,random,2,0.0,0.0,0.75,1.0,0.75,1.0,5
+fastapi/fastapi,library,bm25,2,0.75,1.0,0.75,1.0,0.75,1.0,1
+fastapi/fastapi,library,bm25_embedding,2,0.0,0.0,0.0,0.0,0.75,1.0,6
+fastapi/fastapi,library,bm25_graph,2,0.0,0.0,0.75,1.0,0.75,1.0,2
+fastapi/fastapi,library,bm25_then_embedding,2,0.0,0.0,0.75,1.0,0.75,1.0,4
+fastapi/fastapi,library,bm25_then_graph,2,0.75,1.0,0.75,1.0,0.75,1.0,1
+fastapi/fastapi,library,random,2,0.0,0.0,0.75,1.0,0.75,1.0,3
