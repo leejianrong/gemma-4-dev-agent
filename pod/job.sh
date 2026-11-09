@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Pod-side job: fetch tasks.jsonl + graphs + embeddings from Kaggle (about 850 MiB) and analyse them.
+# PIP_EXTRA="numpy ..." installs extra packages for the analysis script.
 # WANT_SNAPSHOTS=1 also fetches snapshots/ (about 20 GB; raise MAX_MIB and the pod disk).
 #
 # Observability contract (grep these tokens in `pod logs`):
@@ -152,7 +153,7 @@ python3 -c 'import sys; assert sys.version_info >= (3, 9)' || die "python3 >= 3.
 have "$RUNPODCTL" || warn "runpodctl missing: results come back only through the RP_REPORT block"
 if [ -z "${SKIP_PIP:-}" ]; then
   step "pip install kaggle" "$T_BOOT" python3 -m pip install --quiet --disable-pip-version-check \
-    "kaggle==2.2.4" six || die "could not install the kaggle CLI"
+    "kaggle==2.2.4" six ${PIP_EXTRA:-} || die "could not install the kaggle CLI"
 fi
 have "$KAGGLE" || die "kaggle CLI not on PATH after install"
 progress
