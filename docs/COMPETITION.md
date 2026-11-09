@@ -250,8 +250,14 @@ Check these on Kaggle before relying on them:
 - **Only 31B allowed?** The same secondary source says every agent must use 31B. The official page
   lists four models, which is what we follow.
 - **One leaderboard submission per day, five paper submissions** (secondary source).
-- **Whether derived data may be released.** Needed before publishing any benchmark annotations or
-  trajectories; the dataset terms have not been read.
+- **Whether derived data may be released. Settled 2026-11-09: do not publish per-task data.** Rules 4a: Competition Data may be
+  used for any purpose, including academic research. Rules 4b: we must not "transmit, duplicate, publish, redistribute or
+  otherwise provide or make available" it to anyone not in the competition. The rules say nothing about derived data, and our
+  per-task annotations (gold nodes and hunks, per-task trajectories, failure classes by task id) are derived from the gold
+  patches, so we treat them as covered. Allowed: aggregate numbers, figures, tables and code that regenerates them (the paper,
+  the public notebook, runs.csv). Not allowed: gold_nodes.csv, gold_hunks.csv, per-task traces, patches, issue text, or any
+  Kaggle dataset of these. To release them, ask the host on the competition forum and keep the reply here. The paper-track
+  rules may differ; they were not read.
 - **Scoring-time concurrency** for tasks is unknown, so "about 6 minutes per task" (12 h ÷ ~120
   tasks, if serial) is a floor, not a plan.
 - **Third-party scores** (about 0.17 to 0.18 for budget-aware bundles, claims up to 0.24) come from
