@@ -4,6 +4,8 @@ For each mutation record the buggy tree is the source tree with the mutated file
 skill ranks the definitions of that tree (`experiments/skills/localize/scripts/localize.py`,
 imported by path) and the comparison ranker is BM25 over graph node text from `synthetic.graph`.
 A task is a hit at k when its gold node is among the top k ids. Library pool only.
+`siblings.rescued` is the share of tasks where the gold node is outside the top 10 but is one of
+the up to 8 same-file definitions the skill lists for each of its top 3 hits.
 Usage: python -m synthetic.score_localize SRC_DIR --repo NAME --n 100 --seed 0 [--leak 0.0]
 """
 
@@ -62,6 +64,7 @@ def score_records(
         if sk.sk_is_library(path)
     }
     skill_ranks, graph_ranks = [], []
+    in_top10 = rescued = 0
     t_skill = t_graph = 0.0
     for rec in records:
         issue = problem_statement(rec, leak)
@@ -76,6 +79,10 @@ def score_records(
         ranked = sk.sk_rank(cands, issue)
         t_skill += time.perf_counter() - t0
         skill_ranks.append(_rank_of(rec["gold_node"], [c["id"] for c, _ in ranked]))
+        top10 = {c["id"] for c, _ in ranked[:10]}
+        sib = {s["id"] for c, _ in ranked[:3] for s in sk.sk_siblings_of(ranked, c["id"], 8)}
+        in_top10 += rec["gold_node"] in top10
+        rescued += rec["gold_node"] not in top10 and rec["gold_node"] in sib
         t0 = time.perf_counter()
         task_files = dict(files)
         task_files[path] = rec["mutated_text"]
@@ -89,6 +96,11 @@ def score_records(
     return {
         "skill": dict(summarize_hits(skill_ranks), seconds_per_task=round(t_skill / n, 4)),
         "graph_bm25": dict(summarize_hits(graph_ranks), seconds_per_task=round(t_graph / n, 4)),
+        "siblings": {
+            "n": len(records),
+            "rescued": round(rescued / n, 3),
+            "hit@10_plus_siblings": round((in_top10 + rescued) / n, 3),
+        },
         "leak": leak,
     }
 

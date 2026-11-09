@@ -1,6 +1,7 @@
 """Rank the functions and classes of a repository against an issue text (BM25, stdlib only).
 
-Usage: localize.py [--root /workspace] [--top 10] ISSUE TEXT...   (or the text on stdin)
+Usage: localize.py [--root /workspace] [--top 10] [--siblings] ISSUE TEXT...   (or on stdin)
+--siblings also lists the other definitions of the top hits' files (all output under 3,000 chars).
 
 It parses every library .py file with `ast`, one candidate per function, method or class
 (async included, functions nested in functions are not candidates), and ranks them with BM25 over
@@ -188,10 +189,47 @@ def sk_format(ranked: list[tuple[dict, float]], top: int) -> str:
     )
 
 
+SK_BUDGET = 3000  # characters of output in all; the agent's context is small
+
+
+def sk_siblings_of(ranked: list[tuple[dict, float]], hit_id: str, cap: int = 8) -> list[dict]:
+    """The other definitions of the hit's file, best BM25 score first, at most `cap`."""
+    path = next((c["path"] for c, _ in ranked if c["id"] == hit_id), None)
+    if path is None:
+        return []
+    same = [c for c, _ in ranked if c["path"] == path and c["id"] != hit_id]
+    return same[:cap]
+
+
+def sk_format_siblings(
+    ranked: list[tuple[dict, float]], hits: int = 3, cap: int = 8, budget: int = SK_BUDGET
+) -> str:
+    """Siblings of the top hits, one block per file, cut off at `budget` characters."""
+    lines: list[str] = []
+    seen: set[str] = set()
+    used = 0
+    for cand, _ in ranked[:hits]:
+        if cand["path"] in seen:
+            continue
+        seen.add(cand["path"])
+        block = [f"{cand['path']} (near {cand['id']}):"]
+        block += [f"  {c['id']}  :{c['line']}" for c in sk_siblings_of(ranked, cand["id"], cap)]
+        for line in block:
+            if used + len(line) + 1 > budget:
+                return "\n".join(lines)
+            lines.append(line)
+            used += len(line) + 1
+    return "\n".join(lines)
+
+
 def sk_main(argv: list[str]) -> int:
     args = argv[1:]
-    root, top = "/workspace", 10
-    while args and args[0] in ("--root", "--top"):
+    root, top, siblings = "/workspace", 10, False
+    while args and args[0] in ("--root", "--top", "--siblings"):
+        if args[0] == "--siblings":
+            siblings = True
+            args = args[1:]
+            continue
         if args[0] == "--root":
             root = args[1]
         else:
@@ -199,14 +237,21 @@ def sk_main(argv: list[str]) -> int:
         args = args[2:]
     issue = " ".join(args) if args else sys.stdin.read()
     if not issue.strip():
-        print("usage: localize.py [--root DIR] [--top N] ISSUE TEXT", file=sys.stderr)
+        print("usage: localize.py [--root DIR] [--top N] [--siblings] ISSUE TEXT", file=sys.stderr)
         return 2
     t0 = time.time()
     cands = sk_index(sk_read_tree(root))
     ranked = sk_rank(cands, issue)
     took = time.time() - t0
-    print(f"Top {min(top, len(ranked))} of {len(cands)} definitions (BM25), {took:.1f}s")
-    print(sk_format(ranked, top))
+    head = f"Top {min(top, len(ranked))} of {len(cands)} definitions (BM25), {took:.1f}s\n"
+    head += sk_format(ranked, top)
+    print(head)
+    if siblings:
+        title = "Same file as the top hits (other edits may be needed here):\n"
+        rest = SK_BUDGET - len(head) - len(title) - 2
+        block = sk_format_siblings(ranked, budget=rest)
+        if block:
+            print("\n" + title + block)
     return 0
 
 

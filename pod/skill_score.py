@@ -26,6 +26,7 @@ if "sk_index" not in globals():  # standalone; in the kernel the pieces are inli
     _sk = importlib.util.module_from_spec(_spec)
     _spec.loader.exec_module(_sk)
     sk_index, sk_rank, sk_is_library = _sk.sk_index, _sk.sk_rank, _sk.sk_is_library
+    sk_siblings_of = _sk.sk_siblings_of
     from explore import load_graph
     from gold_map import gm_run
     from localize import ll_gold, ll_is_library, ll_metrics, ll_summary, ll_task_rows, ll_write
@@ -83,6 +84,75 @@ def ss_task_rows(task: dict, graph: dict, files: dict[str, str], gold: set[str])
     return rows
 
 
+SS_CAPS = (1, 3, 8)  # 8 is what the skill ships; the others show the precision/recall trade
+SS_MAX_GOLD = 20  # the same multi-site window as pod/cochange.py
+
+
+def ss_sibling_rows(task: dict, graph: dict, files: dict[str, str], gold: set[str]) -> list[dict]:
+    """Leave-one-out sibling scoring on a multi-site task, as pod/cochange.py does for the graph.
+
+    Reveal one library gold node q; the skill suggests the other definitions of q's file (best
+    BM25 score first, capped, or all of them for `file`); recall is the share of the other gold
+    nodes in that set and precision the share of the set that is gold. A query the skill never
+    indexed gets an empty set, so it counts as a miss.
+    """
+    pool = {n["id"] for n in graph["nodes"] if ll_is_library(n["id"])}
+    target = gold & pool
+    if not 2 <= len(target) <= SS_MAX_GOLD:
+        return []
+    ranked = sk_rank(sk_index(files, "head"), task.get("problem_statement") or "")
+    acc: dict[str, list[tuple[float, float, int]]] = {}
+    for q in sorted(target):
+        others = target - {q}
+        sets = {"skill_siblings_file": sk_siblings_of(ranked, q, cap=len(ranked))}
+        for cap in SS_CAPS:
+            sets[f"skill_siblings_cap{cap}"] = sk_siblings_of(ranked, q, cap=cap)
+        for method, sib in sets.items():
+            ids = {c["id"] for c in sib}
+            hit = len(ids & others)
+            acc.setdefault(method, []).append(
+                (hit / len(others), hit / len(ids) if ids else 0.0, len(ids))
+            )
+    rows = []
+    for method, vals in acc.items():
+        n = len(vals)
+        rows.append(
+            {
+                "instance_id": task["instance_id"],
+                "repo": task["repo"],
+                "method": method,
+                "n_gold": len(target),
+                "queries": n,
+                "recall": round(sum(v[0] for v in vals) / n, 4),
+                "precision": round(sum(v[1] for v in vals) / n, 4),
+                "set_size": round(sum(v[2] for v in vals) / n, 1),
+            }
+        )
+    return rows
+
+
+def ss_sibling_summary(rows: list[dict]) -> list[dict]:
+    """Mean recall, precision and set size per method, per repo and over all repos."""
+    groups: dict[tuple, list[dict]] = {}
+    for r in rows:
+        groups.setdefault((r["repo"], r["method"]), []).append(r)
+        groups.setdefault(("all repos", r["method"]), []).append(r)
+    out = []
+    for (repo, method), rs in sorted(groups.items()):
+        n = len(rs)
+        out.append(
+            {
+                "repo": repo,
+                "method": method,
+                "tasks": n,
+                "recall": round(sum(r["recall"] for r in rs) / n, 4),
+                "precision": round(sum(r["precision"] for r in rs) / n, 4),
+                "mean_set_size": round(sum(r["set_size"] for r in rs) / n, 1),
+            }
+        )
+    return out
+
+
 def ss_timing(rows: list[dict]) -> dict:
     out = {}
     for variant in SS_VARIANTS:
@@ -110,6 +180,7 @@ def ss_run(data: Path, gold_csv: Path, out: Path) -> dict:
         if x.strip()
     ]
     rows: list[dict] = []
+    sib_rows: list[dict] = []
     for i, t in enumerate(tasks, 1):
         g = gold.get(t["instance_id"])
         if not g:
@@ -121,6 +192,7 @@ def ss_run(data: Path, gold_csv: Path, out: Path) -> dict:
             print(f"WARN {t['instance_id']}: graph={bool(graph)} files={len(files)}", flush=True)
             continue
         rows += ss_task_rows(t, graph, files, g)
+        sib_rows += ss_sibling_rows(t, graph, files, g)
         rows += [
             {**r, "method": "graph_bm25"}
             for r in ll_task_rows(np, t, graph, None, g)
@@ -131,11 +203,17 @@ def ss_run(data: Path, gold_csv: Path, out: Path) -> dict:
     summary = [r for r in ll_summary(rows) if r["pool"] == "library"]
     ll_write(out / "skill_tasks.csv", rows)
     ll_write(out / "skill_summary.csv", summary)
+    sib_summary = ss_sibling_summary(sib_rows)
+    ll_write(out / "skill_siblings_tasks.csv", sib_rows)  # per task: keep private (terms 4b)
+    ll_write(out / "skill_siblings_summary.csv", sib_summary)
     report = {
         "tasks_scored": len({r["instance_id"] for r in rows}),
         "summary": [r for r in summary if r["repo"] == "all repos"],
         "per_repo": [r for r in summary if r["repo"] != "all repos"],
         "timing": ss_timing(rows),
+        "siblings": [r for r in sib_summary if r["repo"] == "all repos"],
+        "siblings_per_repo": [r for r in sib_summary if r["repo"] != "all repos"],
+        "siblings_tasks": len({r["instance_id"] for r in sib_rows}),
     }
     (out / "skill_report.json").write_text(json.dumps(report, separators=(",", ":")))
     return report
@@ -150,6 +228,7 @@ def ss_pod(argv: list[str]) -> int:
     (out / "report.json").write_text(json.dumps(report, separators=(",", ":")))
     print(json.dumps(report["summary"], indent=1))
     print(json.dumps(report["timing"], indent=1))
+    print(json.dumps(report["siblings"], indent=1))
     return 0
 
 
