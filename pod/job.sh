@@ -151,7 +151,7 @@ python3 -c 'import sys; assert sys.version_info >= (3, 9)' || die "python3 >= 3.
 have "$RUNPODCTL" || warn "runpodctl missing: results come back only through the RP_REPORT block"
 if [ -z "${SKIP_PIP:-}" ]; then
   step "pip install kaggle" "$T_BOOT" python3 -m pip install --quiet --disable-pip-version-check \
-    "kaggle==2.2.4" || die "could not install the kaggle CLI"
+    "kaggle==2.2.4" six || die "could not install the kaggle CLI"
 fi
 have "$KAGGLE" || die "kaggle CLI not on PATH after install"
 progress

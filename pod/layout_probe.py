@@ -52,18 +52,45 @@ def graph_layout(path: Path) -> dict:
     return out
 
 
-def embedding_layout(path: Path, graph_ids: set[str]) -> dict:
-    import numpy as np
+def npy_header(raw: bytes) -> dict:
+    """Read dtype and shape from a .npy header without numpy."""
+    import ast
 
-    z = np.load(path, allow_pickle=True)
+    major = raw[6]
+    hlen = (
+        int.from_bytes(raw[8:10], "little") if major == 1 else int.from_bytes(raw[8:12], "little")
+    )
+    start = 10 if major == 1 else 12
+    return ast.literal_eval(raw[start : start + hlen].decode("latin1"))
+
+
+def embedding_layout(path: Path, graph_ids: set[str]) -> dict:
+    """Array names, dtypes and shapes of an .npz (stdlib only: an .npz is a zip of .npy files)."""
+    import zipfile
+
     out = {"file": path.name, "arrays": {}}
-    for k in z.files:
-        a = z[k]
-        out["arrays"][k] = {"dtype": str(a.dtype), "shape": list(a.shape)}
-        if a.dtype.kind in "US O" and a.ndim == 1:
-            vals = [str(x) for x in a[:3]]
-            out["arrays"][k]["example"] = vals
-            out["arrays"][k]["overlap_with_graph_ids"] = len({str(x) for x in a} & graph_ids)
+    with zipfile.ZipFile(path) as z:
+        for name in z.namelist():
+            with z.open(name) as fh:
+                raw = fh.read(512) if name.endswith(".npy") else b""
+            if not raw.startswith(b"\x93NUMPY"):
+                continue
+            h = npy_header(raw)
+            info = {"dtype": h["descr"], "shape": list(h["shape"])}
+            if str(h["descr"]).startswith(("<U", "|S", "<S", "|O")) and len(h["shape"]) == 1:
+                info["note"] = "key-like array; read below if numpy is present"
+            out["arrays"][name[:-4]] = info
+    try:
+        import numpy as np
+
+        z = np.load(path, allow_pickle=True)
+        for k in z.files:
+            a = z[k]
+            if a.dtype.kind in "USO" and a.ndim == 1:
+                out["arrays"][k]["example"] = [str(x) for x in a[:3]]
+                out["arrays"][k]["overlap_with_graph_ids"] = len({str(x) for x in a} & graph_ids)
+    except Exception as e:  # numpy missing or an object array we cannot load: keep header facts
+        out["numpy_read"] = f"skipped: {type(e).__name__}"
     return out
 
 

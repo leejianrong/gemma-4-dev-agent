@@ -19,3 +19,15 @@ def test_layout_reads_tasks_and_graph(tmp_path):
     assert res["tasks"]["fields"] == ["issue", "repo"]
     assert res["graph"]["example_ids"] == ["pkg.f"]
     assert "SECRET TEXT" not in (tmp_path / "out" / "layout.json").read_text()
+
+
+def test_embedding_layout_reads_npz_headers_without_values(tmp_path):
+    import numpy as np
+
+    from pod.layout_probe import embedding_layout
+
+    p = tmp_path / "e.npz"
+    np.savez(p, vectors=np.zeros((3, 4), dtype="float32"), keys=np.array(["a.b", "c.d", "e.f"]))
+    out = embedding_layout(p, {"a.b"})
+    assert out["arrays"]["vectors"]["shape"] == [3, 4]
+    assert out["arrays"]["keys"]["overlap_with_graph_ids"] == 1
