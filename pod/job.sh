@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Pod-side job: fetch tasks.jsonl + graphs + embeddings from Kaggle (about 850 MiB) and analyse them.
+# WANT_SNAPSHOTS=1 also fetches snapshots/ (about 20 GB; raise MAX_MIB and the pod disk).
 #
 # Observability contract (grep these tokens in `pod logs`):
 #   STAGE <name>        a stage began          STAGE failed (...)  the job is dying, with the stage
@@ -183,7 +184,9 @@ for _ in $(seq 1 12); do
   tok=$(sed -n 's/^Next Page Token = //p' "$RUN/page.out" | head -1)
   [ -n "$tok" ] || break
 done
-awk -F, '$1=="tasks.jsonl" || $1 ~ /^graphs\// || $1 ~ /^embeddings\// {print $1" "$2}' "$RUN/listing.csv" >"$RUN/want.tsv"
+awk -F, -v snaps="${WANT_SNAPSHOTS:-0}" \
+  '$1=="tasks.jsonl" || $1 ~ /^graphs\// || $1 ~ /^embeddings\// || (snaps=="1" && $1 ~ /^snapshots\//) {print $1" "$2}' \
+  "$RUN/listing.csv" >"$RUN/want.tsv"
 n_g=$(grep -c '^graphs/' "$RUN/want.tsv" || true)
 n_e=$(grep -c '^embeddings/' "$RUN/want.tsv" || true)
 n_t=$(grep -c '^tasks.jsonl ' "$RUN/want.tsv" || true)
