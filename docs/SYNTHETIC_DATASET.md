@@ -89,10 +89,11 @@ node.
   per-node comparisons (rules 4b).
 - **Embeddings.** The competition's model is unknown, so we use our own code-embedding model and
   project to 256-d with a fixed random projection. Identical text gives an identical vector, as in
-  the real data (22% of nodes share a vector). Open item: read the key layout inside the real `.npz`
-  with a CPU kernel before writing the exporter.
-- **Task file.** Copy the `tasks.jsonl` field layout from the competition data via a CPU kernel
-  (the file is not in this repo). The harness must accept the bundle without changes.
+  the real data (22% of nodes share a vector). Real layout (A36): the `.npz` holds one array per
+  node, named by the node's dotted ID, each `float32` of shape `[256]`.
+- **Task file.** `tasks.jsonl` has one JSON object per line with the fields `instance_id`, `repo`,
+  `base_commit`, `patch`, `test_patch`, `problem_statement`, `hints_text`, `created_at`, all strings
+  (A36). The harness must accept the bundle without changes.
 
 ## Stages
 
