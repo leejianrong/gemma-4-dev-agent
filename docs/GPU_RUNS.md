@@ -193,3 +193,41 @@ the same way, they are intrinsic gaps. If it passes, our agent's patch was the c
 2. Run route A of the gold-patch check; decide whether the requests tasks leave the dev subset.
 3. One GPU attempt on an A40 that ends after the GEM-79 skill probe (unknowns 4, 5, 7).
 4. Add `wheels/` to `scripts/fetch_data.py` and a `pod/gpu_job.sh` after step 3 works.
+
+## 7. Gold-patch check result (GEM-89, 2026-11-10)
+
+Aggregates only (rules 4b). Route A was run locally and cost nothing: the public `Dockerfile.public`
+image with the public `wheels/` cache (115 files), `--network none`, and `swegemma` 0.2.11 in a
+throwaway Python 3.12 venv (`analysis/gold_check.py`). [measured]
+
+**Setup facts.**
+- `swegemma` imports without torch, vllm or litellm. It needs `google-adk`, `google-genai`,
+  `docker`, `pydantic`, `pyyaml`, `rich`, `numpy`, `networkx`, `cachetools`, `python-dotenv`, plus the
+  `adk_eval_core` and `adk_submission` wheels. [measured]
+- The harness needs the sandbox `setup.py` (env var `KAGGLE_SANDBOX_DIR`) and a host wheels folder.
+  Without the wheels folder no test dependency reaches the container. [measured]
+- The wheel code says the full cache is about 1.7 GB; the public one is 27 MiB. The grader's cache
+  (`.../metric-data/sandbox/wheels`) is not public. [read in swegemma source]
+
+**Results on 12 tasks (the 9 inconclusive baseline tasks and 3 baseline-resolved controls).**
+
+| Path | Controls resolved | Inconclusive tasks resolved | What failed |
+|---|---|---|---|
+| `verify_sample_task_airgapped` (official sweep) | 3 of 3 | 0 of 9 | 6 missing test module; 3 test files not found (the sweep applies the test patch differently, so those 3 say nothing) |
+| `verify_task` with the gold patch (the grading function) | 1 of 3 | 0 of 9 | 8 missing test module, 1 other; 2 controls hit a collection error |
+
+- The collection errors come from the cache, not the tasks: the harness injects the newest wheel of each
+  package, here `starlette` 1.6.0, which older fastapi code cannot import. Our Kaggle run resolved
+  the same controls, so the local setup differs from that run in a way we did not find. [measured, cause guess]
+- A control that fails means this check is not validated. So 0 of 9 does **not** show that every entry
+  scores 0 on those tasks.
+
+**Static count (no code run).** Test patches of 29 of the 129 public tasks (fastapi 21 of 67, requests
+8 of 13) mention `inline_snapshot`, `dirty_equals` or `httpbin`, none of which is in the public cache.
+This is a lower bound: it misses modules imported by existing test files and conftests. [measured]
+
+**Reading.** In every environment we can build from public files, those tasks cannot be judged. Whether
+the leaderboard grader has more wheels is unknown. Keep the 9 tasks out of the dev subset, since our own
+runs use the public cache, and write "unscoreable in our runs" in the paper, not "unscoreable for every
+entry". I did not run the 30 optional extra tasks: with the controls failing, an extrapolation would
+mean nothing. [guess]
