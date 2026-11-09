@@ -1,6 +1,6 @@
 """Rank the functions and classes of a repository against an issue text (BM25, stdlib only).
 
-Usage: localize.py [--root DIR] [--top 10] [--siblings] ISSUE TEXT...   (or on stdin)
+Usage: localize.py [--query TEXT | TEXT...] [--root DIR] [--top 10] [--no-siblings]
 The default root is /workspace, or the sandbox's workspace dir above the script's cwd.
 --siblings also lists the other definitions of the top hits' files (all output under 3,000 chars).
 
@@ -241,20 +241,25 @@ def sk_format_siblings(
 
 def sk_main(argv: list[str]) -> int:
     args = argv[1:]
-    root, top, siblings = sk_find_root(), 10, False
-    while args and args[0] in ("--root", "--top", "--siblings"):
-        if args[0] == "--siblings":
-            siblings = True
+    root, top, siblings, query = sk_find_root(), 10, True, None
+    while args and args[0] in ("--root", "--top", "--query", "--siblings", "--no-siblings"):
+        if args[0] in ("--siblings", "--no-siblings"):  # siblings are on by default
+            siblings = args[0] == "--siblings"
             args = args[1:]
             continue
         if args[0] == "--root":
             root = args[1]
+        elif args[0] == "--query":
+            query = args[1]
         else:
             top = int(args[1])
         args = args[2:]
-    issue = " ".join(args) if args else sys.stdin.read()
+    issue = query or (" ".join(args) if args else sys.stdin.read())
     if not issue.strip():
-        print("usage: localize.py [--root DIR] [--top N] [--siblings] ISSUE TEXT", file=sys.stderr)
+        print(
+            "usage: localize.py [--query TEXT] [--root DIR] [--top N] [--no-siblings] [TEXT]",
+            file=sys.stderr,
+        )
         return 2
     t0 = time.time()
     cands = sk_index(sk_read_tree(root))
