@@ -74,7 +74,9 @@ pull-cochange: ## Download the co-change kernel output into data/cochange/
 	mkdir -p data/cochange
 	kaggle kernels output "$(KAGGLE_USER)/gemma-4-cochange" -p data/cochange --force
 
-.PHONY: kernel-skill-localize pull-skill-localize
+.PHONY: skill-score-pod kernel-skill-localize pull-skill-localize
+skill-score-pod: ## Build dist/skill_score_pod.py, the one-file skill scorer for pod/job.sh (EXPLORE_PY)
+	uv run python scripts/build_skill_score.py
 kernel-skill-localize: ## Build the Kaggle kernel that scores the localize skill offline (GEM-80)
 	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" skillloc
 

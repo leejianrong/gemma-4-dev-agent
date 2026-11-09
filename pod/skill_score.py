@@ -27,6 +27,7 @@ if "sk_index" not in globals():  # standalone; in the kernel the pieces are inli
     _spec.loader.exec_module(_sk)
     sk_index, sk_rank, sk_is_library = _sk.sk_index, _sk.sk_rank, _sk.sk_is_library
     from explore import load_graph
+    from gold_map import gm_run
     from localize import ll_gold, ll_is_library, ll_metrics, ll_summary, ll_task_rows, ll_write
 
 SS_VARIANTS = ("head", "full")
@@ -140,21 +141,22 @@ def ss_run(data: Path, gold_csv: Path, out: Path) -> dict:
     return report
 
 
-def ss_main() -> int:
-    """Kernel entry: re-derive the gold nodes with gold_map, then score the skill."""
-    gm_run(DATA, OUTD / "map")  # noqa: F821
-    report = ss_run(DATA, OUTD / "map" / "gold_nodes.csv", OUTD)  # noqa: F821
-    (OUTD / "report.json").write_text(json.dumps(report, separators=(",", ":")))  # noqa: F821
+def ss_pod(argv: list[str]) -> int:
+    """Entry for a pod or kernel: argv = [prog, DATA_DIR, OUT_DIR]. Re-derives the gold nodes
+    with gold_map (into OUT/map), scores the skill, and writes OUT/report.json."""
+    data, out = Path(argv[1]), Path(argv[2])
+    gm_run(data, out / "map")
+    report = ss_run(data, out / "map" / "gold_nodes.csv", out)
+    (out / "report.json").write_text(json.dumps(report, separators=(",", ":")))
     print(json.dumps(report["summary"], indent=1))
     print(json.dumps(report["timing"], indent=1))
     return 0
 
 
-def ss_cli(argv: list[str]) -> int:
-    report = ss_run(Path(argv[1]), Path(argv[2]), Path(argv[3]))
-    print(json.dumps(report["summary"], indent=1))
-    return 0
+def ss_main() -> int:
+    """Kernel entry: DATA and OUTD are defined by the kernel wrapper appended after this."""
+    return ss_pod(["x", str(DATA), str(OUTD)])  # noqa: F821
 
 
 if __name__ == "__main__":
-    raise SystemExit(ss_cli(sys.argv))
+    raise SystemExit(ss_pod(sys.argv))
