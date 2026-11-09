@@ -129,3 +129,7 @@ analysis-check: ## Prove the container is isolated (no network, read-only data a
 score-local: analysis-image skill-score-pod ## Score the localizer skill on data/competition in the container
 	mkdir -p data/score-out
 	$(call RUN_ISOLATED,dist/skill_score_pod.py,data/score-out)
+
+.PHONY: synthetic-image
+synthetic-image: ## Build the synthetic test image (network needed once; test runs use --network none)
+	docker build -t gemma-synthetic-tests docker/synthetic

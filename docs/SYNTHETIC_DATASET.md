@@ -121,6 +121,56 @@ node.
 Stage 1 is enough to evaluate skill-script localizers at scale (GEM-80, GEM-81) and needs no GPU
 beyond the issue writer.
 
+## Stage 2a result (2026-11-10)
+
+`synthetic/run_tests.py` runs a repo's tests in Docker (image `docker/synthetic`, built once with
+network by `make synthetic-image`; every run uses `--network none`, a read-only root, the repo
+mounted read-only and copied to a tmpfs scratch dir where the mutated file is dropped in, no
+capabilities, a non-root user, 1 GB, 2 CPUs, 256 pids and a wall-clock timeout). Per repo it runs the
+unmutated suite 3 times (tests failing in any run are excluded from every mutant's kill set), then
+for each mutant the test files that name the module, then the full suite, then a rerun of the
+killing tests. A mutant is **usable** when 1 to 5 tests fail only on it; those are its fail-to-pass
+set. Reproduce: `python -m synthetic.fetch CACHE NAME...`, then
+`python -m synthetic.run_tests CACHE NAME... --n 40`.
+
+40 mutants per repo (20 for more-itertools, whose suite takes 43 s), drawn with seed 0 from files
+under the package directory:
+
+| Repo | Tests | Baseline pass | Flaky | Suite s | Mutants | Usable | Too broad | No test fails | Timeout | Kill rate | Usable share | s per mutant | Usable per 500 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| click | 2434 | 98.9% | 0 | 7.4 | 40 | 7 | 22 | 11 | 0 | 72% | 18% | 5.6 | 88 |
+| typer | 1469 | 72.4% | 0 | 12.7 | rejected |  |  |  |  |  |  |  |  |
+| markdown-it-py | 981 | 91.8% | 0 | 2.0 | 40 | 6 | 12 | 10 | 12 | 45% | 15% | 38.7 | 75 |
+| mistune | 1324 | 100.0% | 0 | 7.4 | 40 | 9 | 14 | 13 | 4 | 57% | 22% | 41.7 | 112 |
+| cachetools | 416 | 100.0% | 0 | 1.5 | 40 | 13 | 22 | 0 | 5 | 88% | 32% | 29.8 | 162 |
+| sqlparse | 537 | 100.0% | 0 | 3.0 | 40 | 10 | 27 | 3 | 0 | 92% | 25% | 3.2 | 125 |
+| more-itertools | 765 | 100.0% | 0 | 43.4 | 20 | 15 | 2 | 0 | 3 | 85% | 75% | 88.1 | 375 |
+| sortedcontainers | 300 | 100.0% | 0 | 4.8 | 40 | 21 | 13 | 4 | 2 | 85% | 52% | 12.3 | 262 |
+| tomli | 17 | 100.0% | 0 | 1.0 | 40 | 32 | 5 | 3 | 0 | 92% | 80% | 2.9 | 400 |
+
+*Kill rate* is the share of mutants that make at least one test fail (not "no test fails", not a
+timeout). Mutant runs time out at 8 times the suite time, capped at 120 s. The first five repos in
+the table ran with 3 workers in parallel and no cap, so their seconds per mutant are inflated by
+timeouts.
+
+- **Totals.** Of 300 mutants, 113 are usable (38%), 117 are too broad (more than 5 tests fail), 44
+  are caught by no test and 26 time out (loops from a dropped guard or a shifted constant).
+- **Flaky.** None: no test changed outcome across the 3 unmutated runs of any admitted repo, and no
+  usable mutant failed its rerun.
+- **Baselines.** click has 27 and markdown-it-py about 80 tests that fail unmutated offline; they are
+  excluded. typer is **rejected**: its pass rate is 72.4%, because its tutorial tests run example
+  scripts through `coverage`, which the image does not have (with `coverage` installed the suite
+  exceeds 120 s). The other 8 repos pass the 90% rule.
+- **Yield.** At 500 mutants per repo the 8 admitted repos give about 1,600 usable tasks (sum of the
+  last column), well above the 600 planned for stage 1. The cost is the main limit: the weighted mean
+  is about 24 s per mutant, so 4,000 mutants take about 26 h on one worker or about 7 h on four.
+  Lowering the timeout cap to 30 s would likely cut most of the cost in markdown-it-py, mistune and
+  cachetools.
+- **Open.** The "too broad" share (39%) is high because core functions are used by many tests.
+  Raising the limit from 5 to 10, or choosing the most specific tests, would recover some of them;
+  that is a stage 2b choice. The competition sandbox may lack packages the image has (its list is
+  not published), so a usable mutant here is not proof that the same suite runs there.
+
 ## Validity check (does the proxy rank like the real set?)
 
 1. Choose at least 6 variants that differ in ways we care about: baseline, thinking budget 0 vs
