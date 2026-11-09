@@ -150,3 +150,23 @@ def test_find_root_climbs_from_the_sandbox_temp_cwd(tmp_path, monkeypatch):
         sk.os.path, "isdir", lambda p, real=sk.os.path.isdir: p != "/workspace" and real(p)
     )
     assert sk.sk_find_root(str(cwd)) == str(sandbox / "workspace")
+
+
+def test_main_takes_the_query_option_and_lists_siblings_by_default(tmp_path, capsys):
+    (tmp_path / "m.py").write_text(
+        "def alpha_thing():\n    pass\n\n\ndef beta_other():\n    pass\n"
+    )
+    assert sk.sk_main(["localize.py", "--root", str(tmp_path), "--query", "alpha thing"]) == 0
+    out = capsys.readouterr().out
+    assert "alpha_thing" in out and "Same file as the top hits" in out
+    sk.sk_main(["localize.py", "--root", str(tmp_path), "--no-siblings", "alpha"])
+    assert "Same file" not in capsys.readouterr().out
+
+
+def test_bundle_copy_of_the_skill_matches_the_source():
+    src, dst = (
+        Path("experiments/skills/localize"),
+        Path("experiments/bundles/skill_v1/skills/localize"),
+    )
+    for f in (p for p in src.rglob("*") if p.is_file() and "__pycache__" not in p.parts):
+        assert (dst / f.relative_to(src)).read_bytes() == f.read_bytes(), f

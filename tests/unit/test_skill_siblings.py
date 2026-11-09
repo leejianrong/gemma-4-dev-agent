@@ -60,17 +60,17 @@ def test_format_siblings_respects_the_character_budget():
     assert sk.sk_format_siblings(ranked, hits=3, cap=8, budget=0) == ""
 
 
-def test_main_prints_siblings_only_when_asked(tmp_path, capsys):
+def test_main_prints_siblings_unless_switched_off(tmp_path, capsys):
     for name, text in FILES.items():
         p = tmp_path / name
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text)
     assert sk.sk_main(["localize.py", "--root", str(tmp_path), "render table rows"]) == 0
-    assert "Same file" not in capsys.readouterr().out
-    argv = ["localize.py", "--root", str(tmp_path), "--siblings", "render table rows"]
-    assert sk.sk_main(argv) == 0
     both = capsys.readouterr().out
     assert "Same file" in both and len(both) <= 3000
+    argv = ["localize.py", "--root", str(tmp_path), "--no-siblings", "render table rows"]
+    assert sk.sk_main(argv) == 0
+    assert "Same file" not in capsys.readouterr().out
 
 
 SIB_GRAPH = {
