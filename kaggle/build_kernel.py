@@ -123,6 +123,13 @@ KINDS = {
         ["gold_map.py"],
         "gm_main()",
     ),
+    "layout": (
+        "gemma-4-layout-probe",
+        "Gemma 4 Layout Probe",
+        "layout_kernel",
+        ["layout_probe.py"],
+        "lp_main()",
+    ),
     "eval": (
         "gemma-4-eval-runner",
         "Gemma 4 Eval Runner",
