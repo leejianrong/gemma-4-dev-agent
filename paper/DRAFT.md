@@ -87,9 +87,14 @@ SWE-bench (Jimenez et al., 2024) studies repository-level issue resolution. This
 - **No model in the loop for Sections 4 to 6.** An agent also uses grep, `read_file`, and its own judgement. Our retrieval measures do not capture that behaviour.
 - **Untuned.** We did not tune BM25 or expansion settings. Tuning might improve the graph methods.
 - **Mapping.** Our mapping uses exact old-file lines but omits module-level hunks (164) and new files (26).
+- **No agent ablation.** We have one baseline run and one leaderboard score. We did not test any change to the agent, so we cannot say whether graph tools help or hurt an agent that uses them.
 - **Hidden set.** Private repos may differ from these four. We hold out one repo (rich) when judging agent changes.
 
-## 10. Reproducibility
+## 10. Work in progress
+
+Two results above suggest a change an agent can use: plain text search finds the edit site as well as the graph tools, and the same module holds 62% of the other edited nodes. The competition lets a submission add skills, which are scripts that run in the task sandbox at no model cost. We are building one skill that ranks functions by BM25 over the issue text and lists the same-module nodes of each hit. We first score it offline with the Section 4 and 5 definitions, then run it against the baseline with replicates. These runs are not finished, so this paper reports no agent result for the skill. We are also building a synthetic task set (AST-mutated bugs in permissively licensed libraries, with exact gold nodes) to screen agent changes cheaply. We will test whether it ranks variants the way the real set does before we use it [docs/SYNTHETIC_DATASET.md, docs/ABLATION_PLAN.md].
+
+## 11. Reproducibility
 
 Code: `github.com/leejianrong/gemma-4-dev-agent` (Apache-2.0). The analyses run as free Kaggle CPU kernels on the attached competition data (`pod/gold_map.py`, `pod/localize.py`, `pod/cochange.py`). Run `make eda` to regenerate the figures and `make run-eval` to run the harness. The submission bundle has a hash (sha256 d66442e9…). Every row in `experiments/runs.csv` records that hash. We do not release per-task annotations, traces or patches, because the competition data terms forbid redistributing the data. We release aggregates, figures and code that regenerates them.
 
