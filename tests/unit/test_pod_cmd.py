@@ -14,9 +14,20 @@ def test_command_embeds_scripts_and_quotes_the_token(tmp_path):
     a.write_text("print('hi')\n")
     cmd = command(a, "x'y")
     assert "export KAGGLE_API_TOKEN='x'\"'\"'y'" in cmd
-    assert "print('hi')" in cmd and "bash job.sh" in cmd
+    assert "bash job.sh" in cmd
+    assert "print('hi')" not in cmd  # the files travel compressed
     assert cmd.index("export KAGGLE_API_TOKEN") < cmd.index("bash job.sh")
-    assert Path("pod/job.sh").read_text().splitlines()[0] in cmd
+
+
+def test_heredoc_round_trips_through_base64_gunzip(tmp_path):
+    import subprocess
+
+    from pod.pod_cmd import heredoc
+
+    text = "line one\nline 'two'\n" * 50
+    out = tmp_path / "f.txt"
+    subprocess.run(["bash", "-c", heredoc(str(out), text, "EOF_T")], check=True)
+    assert out.read_text() == text.rstrip() + "\n"
 
 
 def test_extra_env_pairs_are_exported_before_the_job(tmp_path):
