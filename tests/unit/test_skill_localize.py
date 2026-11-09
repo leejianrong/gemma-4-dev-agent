@@ -139,3 +139,14 @@ def test_cli_reads_the_workspace_and_prints_ranked_definitions(tmp_path, capsys)
     assert sk.sk_main(["localize.py", "--root", str(tmp_path), "render", "table"]) == 0
     out = capsys.readouterr().out
     assert "pkg.a.render_table" in out and "test_render_table" not in out
+
+
+def test_find_root_climbs_from_the_sandbox_temp_cwd(tmp_path, monkeypatch):
+    sandbox = tmp_path / "swegemma_sandbox_x"
+    (sandbox / "workspace").mkdir(parents=True)
+    cwd = sandbox / "tmp" / "tmpabc"
+    cwd.mkdir(parents=True)
+    monkeypatch.setattr(
+        sk.os.path, "isdir", lambda p, real=sk.os.path.isdir: p != "/workspace" and real(p)
+    )
+    assert sk.sk_find_root(str(cwd)) == str(sandbox / "workspace")
