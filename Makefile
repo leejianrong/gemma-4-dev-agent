@@ -107,3 +107,25 @@ kernel-eval: ## Build the GPU eval-runner kernel. EVAL_TASKS=5|all|id,id EVAL_RU
 
 run-eval: kernel-eval ## Push the eval runner to Kaggle GPU (uses quota; capped by EVAL_TIMEOUT_S, default 7200)
 	kaggle kernels push -p kaggle/eval_kernel -t $${EVAL_TIMEOUT_S:-7200} --accelerator $${EVAL_MACHINE:-NvidiaL4}
+
+.PHONY: analysis-image analysis-check score-local
+ANALYSIS_IMAGE = gemma-dev-analysis
+# Run a script on the competition data with no network, a read-only root, the data mounted read-only
+# and resource limits. Usage: $(call RUN_ISOLATED,SCRIPT,OUT_DIR)
+define RUN_ISOLATED
+docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1g --cap-drop ALL \
+  --security-opt no-new-privileges --pids-limit 256 --memory 5g --cpus 2 \
+  --user $$(id -u):$$(id -g) -e HOME=/tmp \
+  -v "$(CURDIR)/data/competition:/data:ro" -v "$(CURDIR)/$(1):/job/analysis.py:ro" \
+  -v "$(CURDIR)/$(2):/out" $(ANALYSIS_IMAGE) python /job/analysis.py /data /out
+endef
+
+analysis-image: ## Build the analysis container image (needs network once)
+	docker build -t $(ANALYSIS_IMAGE) docker/analysis
+
+analysis-check: ## Prove the container is isolated (no network, read-only data and root)
+	bash docker/analysis/check_isolation.sh $(ANALYSIS_IMAGE)
+
+score-local: analysis-image skill-score-pod ## Score the localizer skill on data/competition in the container
+	mkdir -p data/score-out
+	$(call RUN_ISOLATED,dist/skill_score_pod.py,data/score-out)
