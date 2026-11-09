@@ -218,6 +218,7 @@ dl_one() {
       if [ ! -f "$dest" ] && [ -f "$dest.zip" ]; then unzip_py "$dest.zip" "$dir" && rm -f "$dest.zip"; fi
       if [ -f "$dest" ] && [ "$(stat -c %s "$dest")" = "$size" ]; then
         echo "$name" >>"$RUN/dl.done"
+        sleep "${DL_SLEEP:-0}" # pause between files if the API starts answering 429
         return 0
       fi
     fi
@@ -227,7 +228,7 @@ dl_one() {
   return 1
 }
 export -f dl_one unzip_py
-export RUN DATA COMP KAGGLE T_FILE
+export RUN DATA COMP KAGGLE T_FILE DL_SLEEP
 
 # ---- smoke: the real download path on 3 files, then a projected total time ----------------------
 stage smoke
