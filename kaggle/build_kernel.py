@@ -164,8 +164,13 @@ EVAL_IMAGE = (
 )
 
 
+def submission_dir() -> Path:
+    """The bundle the kernel carries: submission/, or SUBMISSION_DIR for a probe or variant."""
+    return ROOT / os.environ.get("SUBMISSION_DIR", "submission")
+
+
 def submission_files() -> dict[str, str]:
-    root = ROOT / "submission"
+    root = submission_dir()
     return {
         str(p.relative_to(root)): p.read_text(encoding="utf-8")
         for p in sorted(root.rglob("*"))
@@ -179,7 +184,7 @@ def eval_params(files: dict[str, str]) -> dict:
     import submission as sub  # noqa: PLC0415
 
     with tempfile.TemporaryDirectory() as tmp:
-        zpath = sub.build_zip(ROOT / "submission", Path(tmp) / "s.zip")
+        zpath = sub.build_zip(submission_dir(), Path(tmp) / "s.zip")
         sha = hashlib.sha256(zpath.read_bytes()).hexdigest()
     m = re.search(r"^\s*model:\s*(\S+)", files["agent.yaml"], re.MULTILINE)
     spec = os.environ.get("EVAL_TASKS", "5")

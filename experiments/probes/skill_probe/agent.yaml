@@ -1,0 +1,11 @@
+# GEM-79 probe: not a competitor. It measures what a skill script can see and what it costs.
+name: skill_probe
+model: gemma-4-31b-it-qat-w4a16-ct
+instruction: !include prompts/system.md
+tools:
+  - run_command
+  - get_status
+  - submit_patch
+skills:
+  - skills/probe
+generate_content_config: !include configs/sampling.yaml
