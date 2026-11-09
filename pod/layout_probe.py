@@ -95,5 +95,10 @@ def lp_main() -> int:
     return 0
 
 
+def lp_cli(argv: list[str]) -> int:
+    layout(Path(argv[1]), Path(argv[2]))
+    return 0
+
+
 if __name__ == "__main__":
-    layout(Path(sys.argv[1]), Path(sys.argv[2]))
+    raise SystemExit(lp_cli(sys.argv))
