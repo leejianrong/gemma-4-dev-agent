@@ -2,7 +2,8 @@
 
 Rule: rich is held out (winners are confirmed there, GEM-33). From the other repos we drop tasks
 whose baseline test run was inconclusive (they carry no signal until the sandbox gap is
-understood, GEM-16), then draw a fixed number per repo with a seeded shuffle. The id list is
+understood, GEM-16) or whose test patch uses a package the public grading image lacks (A39),
+then draw a fixed number per repo with a seeded shuffle. The id list is
 written to data/dev_subset.json, which is gitignored: it is derived from competition data, and the
 rule plus the seed regenerate it. Usage: python -m analysis.dev_subset
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 import csv
 import json
 import random
+import re
 from pathlib import Path
 
 HELD_OUT = "Textualize/rich"
@@ -30,7 +32,7 @@ def pick(
     return out
 
 
-def load(hunks: Path, results: Path, run_dir_classes: Path | None = None):
+def load(hunks: Path, results: Path, tasks: Path):
     ids: dict[str, list[str]] = {}
     seen = set()
     with open(hunks, newline="", encoding="utf-8") as fh:
@@ -41,11 +43,28 @@ def load(hunks: Path, results: Path, run_dir_classes: Path | None = None):
     from analysis.failure_classes import classify_run
 
     drop = {r["instance_id"] for r in classify_run(results, hunks) if r["class"] == "inconclusive"}
-    return ids, drop
+    return ids, drop | needs_missing_test_deps(tasks)
+
+
+MISSING_DEPS = re.compile(r"inline_snapshot|dirty_equals|httpbin|trustme")
+
+
+def needs_missing_test_deps(tasks: Path) -> set[str]:
+    """Tasks whose test patch uses a package the public grading image lacks (GEM-89, A39)."""
+    out = set()
+    for line in open(tasks, encoding="utf-8"):
+        t = json.loads(line)
+        if MISSING_DEPS.search(t["test_patch"]):
+            out.add(t["instance_id"])
+    return out
 
 
 if __name__ == "__main__":
-    ids, drop = load(Path("data/map/gold_hunks.csv"), Path("data/runs/gemma-4-eval-runner"), None)
+    ids, drop = load(
+        Path("data/map/gold_hunks.csv"),
+        Path("data/runs/gemma-4-eval-runner"),
+        Path("data/competition/tasks.jsonl"),
+    )
     ids.pop(HELD_OUT, None)
     chosen = pick(ids, drop, PER_REPO, SEED)
     flat = sorted(i for v in chosen.values() for i in v)

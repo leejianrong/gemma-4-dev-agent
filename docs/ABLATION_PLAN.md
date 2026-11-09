@@ -8,9 +8,11 @@ Status: plan, 2026-11-09. Nothing in it has been run on agents yet.
 regenerate it). The rule:
 
 - rich is held out. Winners are confirmed there (GEM-33), never tuned on it.
-- Tasks whose baseline test run was inconclusive are dropped (9 of 30 baseline tasks, GEM-16). They
-  carry no signal until we know whether the grader has the same gap.
-- A seeded draw per repo: fastapi 30, requests 6, httpx 1. Total 37 tasks.
+- Tasks whose baseline test run was inconclusive are dropped (9 of 30 baseline tasks, GEM-16), and so
+  are tasks whose test patch mentions `inline_snapshot`, `dirty_equals`, `httpbin` or `trustme`
+  (29 of 129 public tasks, A39). The public grading image lacks them, so these tasks carry no signal
+  in our runs.
+- A seeded draw per repo: fastapi 30, requests 5, httpx 1. Total 36 tasks.
 - Every arm runs the same 37 tasks, so arms are compared pairwise.
 
 Cost: about 5.3 min per task, so about 3.3 h of GPU per arm and replicate.
