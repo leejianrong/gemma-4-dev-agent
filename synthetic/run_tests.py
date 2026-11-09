@@ -218,7 +218,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--out", type=Path, default=Path("data/synthetic/stage2a"))
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
-    entries = [e for e in load_manifest() if not a.names or e["name"] in a.names]
+    entries = [
+        e
+        for e in load_manifest()
+        if (a.cache / e["name"]).is_dir() and (not a.names or e["name"] in a.names)
+    ]
     with ThreadPoolExecutor(a.workers) as ex:
         rows = list(ex.map(lambda e: run_repo(e, a.cache.resolve(), a.n, a.seed, a.out), entries))
     (a.out / "summary.json").write_text(json.dumps(rows, indent=1), encoding="utf-8")
