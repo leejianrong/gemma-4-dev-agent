@@ -65,3 +65,17 @@ def test_audit_kernel_runs_and_writes_the_audit(tmp_path, monkeypatch):
     assert r.returncode == 0, r.stdout + r.stderr
     assert "## Hunk outcomes over all tasks" in r.stdout
     assert (tmp_path / "o" / "audit.md").is_file()
+
+
+def test_skill_localize_kernel_inlines_the_skill_and_has_its_own_slug(tmp_path):
+    path = build_kernel.build("someone", "skillloc")
+    src = path.read_text(encoding="utf-8")
+    compile(src, "kernel.py", "exec")
+    assert (
+        "def sk_index(" in src
+        and "def ss_main(" in src
+        and "__main__" not in src.split("WRAPPER")[0]
+    )
+    meta = json.loads((path.parent / "kernel-metadata.json").read_text())
+    assert meta["id"] == "someone/gemma-4-skill-localize"
+    assert meta["enable_gpu"] == "false" and meta["enable_internet"] == "false"

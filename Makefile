@@ -74,6 +74,14 @@ pull-cochange: ## Download the co-change kernel output into data/cochange/
 	mkdir -p data/cochange
 	kaggle kernels output "$(KAGGLE_USER)/gemma-4-cochange" -p data/cochange --force
 
+.PHONY: kernel-skill-localize pull-skill-localize
+kernel-skill-localize: ## Build the Kaggle kernel that scores the localize skill offline (GEM-80)
+	python3 kaggle/build_kernel.py "$(KAGGLE_USER)" skillloc
+
+pull-skill-localize: ## Download the skill-scoring kernel output into data/skill_localize/
+	mkdir -p data/skill_localize
+	kaggle kernels output "$(KAGGLE_USER)/gemma-4-skill-localize" -p data/skill_localize --force
+
 .PHONY: pull-runs dash
 pull-runs: ## Download an eval-runner kernel's runs into data/runs/<KERNEL>/ (make pull-runs KERNEL=slug)
 	@test -n "$(KERNEL)" || { echo "usage: make pull-runs KERNEL=<kernel slug>" >&2; exit 2; }
