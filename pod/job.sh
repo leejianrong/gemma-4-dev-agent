@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Pod-side job: fetch tasks.jsonl + graphs + embeddings from Kaggle (about 850 MiB) and analyse them.
 # PIP_EXTRA="numpy ..." installs extra packages for the analysis script.
-# WANT_SNAPSHOTS=1 also fetches snapshots/ (about 20 GB; raise MAX_MIB and the pod disk).
+# WANT_SNAPSHOTS=1 also fetches snapshots/ (about 20 GB; raise MAX_MIB and the pod disk);
+# SNAP_IDS=id1,id2,... limits that to those tasks.
 #
 # Observability contract (grep these tokens in `pod logs`):
 #   STAGE <name>        a stage began          STAGE failed (...)  the job is dying, with the stage
@@ -109,7 +110,7 @@ except Exception:
 print(json.dumps({"status": status, "stage": stage, "report": rep}, separators=(",", ":")))
 PY
   echo "RP_REPORT_END"
-  tar czf "$RUN/artifact.tgz" -C "$RUN" out job.log stage status listing.csv want.tsv dl.failed 2>/dev/null ||
+  tar czf "$RUN/artifact.tgz" -C "$RUN" out job.log stage status listing.csv want.tsv dl.failed dl.log 2>/dev/null ||
     tar czf "$RUN/artifact.tgz" -C "$RUN" job.log 2>/dev/null || true
   if have "$RUNPODCTL" && [ -s "$RUN/artifact.tgz" ]; then
     base="gemma-$RANDOM$RANDOM"
@@ -185,8 +186,10 @@ for _ in $(seq 1 12); do
   tok=$(sed -n 's/^Next Page Token = //p' "$RUN/page.out" | head -1)
   [ -n "$tok" ] || break
 done
-awk -F, -v snaps="${WANT_SNAPSHOTS:-0}" \
-  '$1=="tasks.jsonl" || $1 ~ /^graphs\// || $1 ~ /^embeddings\// || (snaps=="1" && $1 ~ /^snapshots\//) {print $1" "$2}' \
+awk -F, -v snaps="${WANT_SNAPSHOTS:-0}" -v ids=",${SNAP_IDS:-}," \
+  '{ id = $1; sub(/^snapshots\//, "", id); sub(/\.tgz$/, "", id) }
+   $1=="tasks.jsonl" || $1 ~ /^graphs\// || $1 ~ /^embeddings\// ||
+   (snaps=="1" && $1 ~ /^snapshots\// && (ids==",," || index(ids, "," id ","))) {print $1" "$2}' \
   "$RUN/listing.csv" >"$RUN/want.tsv"
 n_g=$(grep -c '^graphs/' "$RUN/want.tsv" || true)
 n_e=$(grep -c '^embeddings/' "$RUN/want.tsv" || true)
@@ -233,7 +236,7 @@ t0=$(now)
 for pat in '^tasks.jsonl ' '^graphs/' '^embeddings/'; do
   line=$(grep -m1 -E "$pat" "$RUN/want.tsv")
   # shellcheck disable=SC2086
-  dl_one $line || die "smoke download failed: ${line%% *}"
+  dl_one $line || { tail -n 5 "$RUN/dl.log" | cut -c1-200; die "smoke download failed: ${line%% *}"; }
 done
 dt=$(($(now) - t0))
 python3 - "$DATA" <<'PY' || die "smoke files are not what we expected"
