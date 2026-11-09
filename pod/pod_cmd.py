@@ -10,6 +10,8 @@ for example WANT_SNAPSHOTS=1.
 
 from __future__ import annotations
 
+import base64
+import gzip
 import shlex
 import sys
 from pathlib import Path
@@ -27,8 +29,10 @@ def env_value(path: Path, name: str) -> str:
 
 
 def heredoc(dest: str, text: str, tag: str) -> str:
-    assert f"\n{tag}\n" not in text
-    return f"cat > {dest} <<'{tag}'\n{text.rstrip()}\n{tag}\n"
+    """Write text to dest from a gzip+base64 block, keeping the command small (RunPod limits it)."""
+    blob = base64.b64encode(gzip.compress(text.encode("utf-8"), 9, mtime=0)).decode()
+    lines = "\n".join(blob[i : i + 76] for i in range(0, len(blob), 76))
+    return f"base64 -d <<'{tag}' | gunzip > {dest}\n{lines}\n{tag}\n"
 
 
 def command(analysis: Path, token: str, env: list[str] | None = None) -> str:
