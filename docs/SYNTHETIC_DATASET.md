@@ -34,6 +34,21 @@ errored (missing `dirty_equals`, `inline_snapshot`, a broken `httpbin` fixture).
 admitted only if its tests run offline in the competition's image with pytest and what is already
 installed. We pin each repo to one commit SHA and check this before generating anything.
 
+**Manifest, fetcher and readiness check (GEM-87).** `synthetic/repos.json` pins all 23 repos (the
+16 main and 7 reserve) to the latest release tag and its full commit SHA, with the licence read from
+the LICENSE file at that SHA, the module names, the package dir and the tests dir.
+`python -m synthetic.fetch CACHE` clones each at its tag and refuses any checkout whose HEAD is not the
+pinned SHA. `python -m synthetic.readiness CACHE` parses each repo's tests with `ast` (no repo code
+runs) and rejects a repo that imports a module outside stdlib, pytest, its own package and its
+declared runtime dependencies, uses a plugin fixture or marker, a network fixture, or needs Python
+above 3.13. Imports under `try/except ImportError` and files pytest does not collect are ignored.
+Result on 2026-11-09: 9 admitted (click, typer, markdown-it-py, mistune, cachetools, sqlparse,
+more-itertools, sortedcontainers, tomli) and 14 rejected, all licences permissive. What we could not
+determine: the competition image's installed packages (the list is per repo and unpublished), so a
+declared runtime dependency is assumed to be present and any test-only dependency counts as
+missing. Some rejections are cautious: flask builds modules at test time, and toolz imports
+`annotationlib`, which exists only in Python 3.14.
+
 ## Bug injection
 
 1. **Mutate.** Parse each library file with `ast` and apply one operator at a time: swap a

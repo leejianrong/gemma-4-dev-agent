@@ -1,0 +1,302 @@
+[
+ {
+  "name": "starlette",
+  "url": "https://github.com/encode/starlette.git",
+  "tag": "1.10.0",
+  "sha": "8aa828ceaff764a2e57932fb42fdf105a47c4c83",
+  "group": "web",
+  "modules": [
+   "starlette"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "starlette",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "werkzeug",
+  "url": "https://github.com/pallets/werkzeug.git",
+  "tag": "3.1.9",
+  "sha": "6604c3b8784ecc7cf5ac0b7412d916989b4c7d45",
+  "group": "web",
+  "modules": [
+   "werkzeug"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "src/werkzeug",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "flask",
+  "url": "https://github.com/pallets/flask.git",
+  "tag": "3.1.3",
+  "sha": "22d924701a6ae2e4cd01e9a15bbaf3946094af65",
+  "group": "web",
+  "modules": [
+   "flask"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "src/flask",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "httpcore",
+  "url": "https://github.com/encode/httpcore.git",
+  "tag": "1.0.9",
+  "sha": "98209758cc14e1a5f966fe1dfdc1064b94055d8c",
+  "group": "web",
+  "modules": [
+   "httpcore"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "httpcore",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "h11",
+  "url": "https://github.com/python-hyper/h11.git",
+  "tag": "v0.16.0",
+  "sha": "1c5b07581f058886c8bdd87adababd7d959dc7ca",
+  "group": "web",
+  "modules": [
+   "h11"
+  ],
+  "license": "MIT",
+  "package_dir": "h11",
+  "tests_dir": "h11/tests"
+ },
+ {
+  "name": "click",
+  "url": "https://github.com/pallets/click.git",
+  "tag": "8.5.1",
+  "sha": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+  "group": "cli",
+  "modules": [
+   "click"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "src/click",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "typer",
+  "url": "https://github.com/fastapi/typer.git",
+  "tag": "0.28.0",
+  "sha": "bf5cfc1b5ea5092254d1c3924eeccf13d48605eb",
+  "group": "cli",
+  "modules": [
+   "typer"
+  ],
+  "license": "MIT",
+  "package_dir": "typer",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "pygments",
+  "url": "https://github.com/pygments/pygments.git",
+  "tag": "2.21.0",
+  "sha": "a43b45dcf081b6010c6ab4428f149f7f6d2499c4",
+  "group": "cli",
+  "modules": [
+   "pygments"
+  ],
+  "license": "BSD-2-Clause",
+  "package_dir": "pygments",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "markdown-it-py",
+  "url": "https://github.com/executablebooks/markdown-it-py.git",
+  "tag": "v4.2.0",
+  "sha": "36c5f547144df2d01970a5792d68c71a3380b227",
+  "group": "cli",
+  "modules": [
+   "markdown_it"
+  ],
+  "license": "MIT",
+  "package_dir": "markdown_it",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "mistune",
+  "url": "https://github.com/lepture/mistune.git",
+  "tag": "v3.4.0",
+  "sha": "f19057fdf339affb61ca63c7fe28df7a951ec588",
+  "group": "cli",
+  "modules": [
+   "mistune"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "src/mistune",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "jinja2",
+  "url": "https://github.com/pallets/jinja.git",
+  "tag": "3.1.6",
+  "sha": "15206881c006c79667fe5154fe80c01c65410679",
+  "group": "cli",
+  "modules": [
+   "jinja2"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "src/jinja2",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "attrs",
+  "url": "https://github.com/python-attrs/attrs.git",
+  "tag": "26.1.0",
+  "sha": "7bfc49e9b22d5ba25b6e429524c3d49fee27cb36",
+  "group": "small",
+  "modules": [
+   "attr",
+   "attrs"
+  ],
+  "license": "MIT",
+  "package_dir": "src/attr",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "arrow",
+  "url": "https://github.com/arrow-py/arrow.git",
+  "tag": "1.4.0",
+  "sha": "2c1f5185ad66bf3b1cf8c0812f4b4fe65ac46656",
+  "group": "small",
+  "modules": [
+   "arrow"
+  ],
+  "license": "Apache-2.0",
+  "package_dir": "arrow",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "tenacity",
+  "url": "https://github.com/jd/tenacity.git",
+  "tag": "9.2.1",
+  "sha": "4410996dd9a96864a2733ce0778bcaa112b72811",
+  "group": "small",
+  "modules": [
+   "tenacity"
+  ],
+  "license": "Apache-2.0",
+  "package_dir": "tenacity",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "cachetools",
+  "url": "https://github.com/tkem/cachetools.git",
+  "tag": "v8.0.0",
+  "sha": "1ce79efa552d1bdda70d144d401ef9105d999184",
+  "group": "small",
+  "modules": [
+   "cachetools"
+  ],
+  "license": "MIT",
+  "package_dir": "src/cachetools",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "sqlparse",
+  "url": "https://github.com/andialbrecht/sqlparse.git",
+  "tag": "0.6.1",
+  "sha": "09dbe1eec31ed1b3cd05366748865f11ba427d32",
+  "group": "small",
+  "modules": [
+   "sqlparse"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "sqlparse",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "toolz",
+  "url": "https://github.com/pytoolz/toolz.git",
+  "tag": "1.2.0",
+  "sha": "451af60dec590a6010e2babdbf391ea8f815122f",
+  "group": "reserve",
+  "modules": [
+   "toolz"
+  ],
+  "license": "BSD-3-Clause",
+  "package_dir": "toolz",
+  "tests_dir": "toolz/tests"
+ },
+ {
+  "name": "more-itertools",
+  "url": "https://github.com/more-itertools/more-itertools.git",
+  "tag": "v11.2.1",
+  "sha": "4aeb4338ae1407d8da9723e86da99efeb446f719",
+  "group": "reserve",
+  "modules": [
+   "more_itertools"
+  ],
+  "license": "MIT",
+  "package_dir": "more_itertools",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "sortedcontainers",
+  "url": "https://github.com/grantjenks/python-sortedcontainers.git",
+  "tag": "v2.4.0",
+  "sha": "a1f52d6713dd2c2713a881d4f4d86ed68ff71cab",
+  "group": "reserve",
+  "modules": [
+   "sortedcontainers"
+  ],
+  "license": "Apache-2.0",
+  "package_dir": "sortedcontainers",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "boltons",
+  "url": "https://github.com/mahmoud/boltons.git",
+  "tag": "26.2.0",
+  "sha": "4332b35a278d694f30c99881faa61cde695c7a96",
+  "group": "reserve",
+  "modules": [
+   "boltons"
+  ],
+  "license": "BSD-2-Clause",
+  "package_dir": "boltons",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "humanize",
+  "url": "https://github.com/python-humanize/humanize.git",
+  "tag": "4.16.0",
+  "sha": "3c577d7650508d52aa2982e930b0e744c343082f",
+  "group": "reserve",
+  "modules": [
+   "humanize"
+  ],
+  "license": "MIT",
+  "package_dir": "src/humanize",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "pyyaml",
+  "url": "https://github.com/yaml/pyyaml.git",
+  "tag": "6.0.3",
+  "sha": "49790e73684bebad1df05ef8d828fa12f685bffb",
+  "group": "reserve",
+  "modules": [
+   "yaml"
+  ],
+  "license": "MIT",
+  "package_dir": "lib/yaml",
+  "tests_dir": "tests"
+ },
+ {
+  "name": "tomli",
+  "url": "https://github.com/hukkin/tomli.git",
+  "tag": "2.5.0",
+  "sha": "a2a578949199336ebc3884eeba4aede87da41ef2",
+  "group": "reserve",
+  "modules": [
+   "tomli"
+  ],
+  "license": "MIT",
+  "package_dir": "src/tomli",
+  "tests_dir": "tests"
+ }
+]
