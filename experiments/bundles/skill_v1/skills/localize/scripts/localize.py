@@ -154,7 +154,9 @@ def sk_read_tree(root: str) -> dict[str, str]:
         for name in sorted(names):
             full = os.path.join(here, name)
             rel = os.path.relpath(full, root)
-            if not sk_is_library(rel):
+            if name.startswith(".") or not sk_is_library(
+                rel
+            ):  # the harness drops .adk_exec_*.py here
                 continue
             try:
                 if os.path.getsize(full) > SK_MAX_BYTES:

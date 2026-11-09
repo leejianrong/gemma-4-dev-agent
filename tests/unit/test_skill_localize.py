@@ -170,3 +170,9 @@ def test_bundle_copy_of_the_skill_matches_the_source():
     )
     for f in (p for p in src.rglob("*") if p.is_file() and "__pycache__" not in p.parts):
         assert (dst / f.relative_to(src)).read_bytes() == f.read_bytes(), f
+
+
+def test_read_tree_skips_dotfiles_the_harness_writes(tmp_path):
+    (tmp_path / "m.py").write_text("def f():\n    pass\n")
+    (tmp_path / ".adk_exec_ab12.py").write_text("def _materialize_and_run():\n    pass\n")
+    assert list(sk.sk_read_tree(str(tmp_path))) == ["m.py"]

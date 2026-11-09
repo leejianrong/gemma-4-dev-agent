@@ -1,7 +1,7 @@
 # Skill variant of the baseline (GEM-82 pilot): adds the localize skill and one prompt paragraph. Baseline adapted from "Gemma 4 | Budget-Aware Coding Agent v2" (flexonafft), which credits
 # matterhorn3838's "Gemma 4 SuperAgent" (https://www.kaggle.com/code/matterhorn3838/gemma-4-superagent),
 # the official sample_submission prompt and community graph-tool investigations. Files are unchanged
-# from that notebook; see docs/ATTRIBUTION.md. prompts/system.md is the baseline file plus one appended section.
+# from that notebook; see docs/ATTRIBUTION.md. prompts/system.md is the baseline file with one section added at the top.
 name: swe_agent
 model: gemma-4-31b-it-qat-w4a16-ct
 instruction: !include prompts/system.md
