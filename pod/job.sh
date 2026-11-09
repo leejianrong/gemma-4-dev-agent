@@ -198,7 +198,8 @@ echo "expect: tasks.jsonl=$n_t graphs=$n_g embeddings=$n_e total=$total files ${
 [ "$n_g" -ge "$MIN_FILES" ] && [ "$n_e" -ge "$MIN_FILES" ] || die "listing too small (graphs=$n_g embeddings=$n_e)"
 { [ "$mib" -ge "${MIN_MIB:-300}" ] && [ "$mib" -le "${MAX_MIB:-3000}" ]; } || die "expected size ${mib}MiB outside ${MIN_MIB:-300}-${MAX_MIB:-3000}MiB"
 free=$(df -Pm "$RUN" | awk 'NR==2{print $4}')
-[ "$free" -ge $((mib * 3)) ] || die "disk: ${free}MiB free, need ${mib}x3"
+pct="${DISK_PERCENT:-300}" # free space needed, as a percent of the download (300 = zips plus unpacked)
+[ "$free" -ge $((mib * pct / 100)) ] || die "disk: ${free}MiB free, need ${pct}% of ${mib}MiB"
 progress
 
 # ---- downloader -----------------------------------------------------------------------------
