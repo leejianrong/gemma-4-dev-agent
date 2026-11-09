@@ -32,6 +32,7 @@ figures/
 kaggle/map_kernel/
 kaggle/localize_kernel/
 kaggle/cochange_kernel/
+kaggle/skill_localize_kernel/
 kaggle/subcheck_kernel/
 kaggle/eval_kernel/
 kaggle/layout_kernel/

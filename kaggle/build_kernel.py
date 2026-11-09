@@ -158,6 +158,18 @@ KINDS = {
         ["gold_map.py", "localize.py", "cochange.py"],
         "cc_main()",
     ),
+    "skillloc": (
+        "gemma-4-skill-localize",
+        "Gemma 4 Skill Localize",
+        "skill_localize_kernel",
+        [
+            "gold_map.py",
+            "localize.py",
+            "../experiments/skills/localize/scripts/localize.py",
+            "skill_score.py",
+        ],
+        "ss_main()",
+    ),
 }
 TITLE = "Gemma 4 Graph Explore"
 # Probed with EVAL_PROBE=1: "NvidiaL4" gives 4 x L4 (23 GB); "NvidiaL4x4", "NvidiaL4X4" and
