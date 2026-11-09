@@ -1,6 +1,7 @@
 """Rank the functions and classes of a repository against an issue text (BM25, stdlib only).
 
-Usage: localize.py [--root /workspace] [--top 10] [--siblings] ISSUE TEXT...   (or on stdin)
+Usage: localize.py [--root DIR] [--top 10] [--siblings] ISSUE TEXT...   (or on stdin)
+The default root is /workspace, or the sandbox's workspace dir above the script's cwd.
 --siblings also lists the other definitions of the top hits' files (all output under 3,000 chars).
 
 It parses every library .py file with `ast`, one candidate per function, method or class
@@ -130,6 +131,22 @@ def sk_index(files: dict[str, str], class_text: str = "head") -> list[dict]:
     return out
 
 
+def sk_find_root(cwd: str | None = None) -> str:
+    """The repo to index: /workspace, or the `workspace` dir that sits above a script's temp cwd.
+
+    The harness's subprocess sandbox runs skill scripts on the host with no /workspace; the repo is
+    <sandbox>/workspace and the script's cwd is <sandbox>/tmp/<random> (measured in GEM-79).
+    """
+    if os.path.isdir("/workspace"):
+        return "/workspace"
+    here = os.path.abspath(cwd or os.getcwd())
+    for _ in range(5):
+        if os.path.isdir(os.path.join(here, "workspace")):
+            return os.path.join(here, "workspace")
+        here = os.path.dirname(here)
+    return "/workspace"
+
+
 def sk_read_tree(root: str) -> dict[str, str]:
     files: dict[str, str] = {}
     for here, dirs, names in os.walk(root):
@@ -224,7 +241,7 @@ def sk_format_siblings(
 
 def sk_main(argv: list[str]) -> int:
     args = argv[1:]
-    root, top, siblings = "/workspace", 10, False
+    root, top, siblings = sk_find_root(), 10, False
     while args and args[0] in ("--root", "--top", "--siblings"):
         if args[0] == "--siblings":
             siblings = True
