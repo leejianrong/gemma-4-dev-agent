@@ -26,25 +26,31 @@ def draw():
     ax.grid(False)
     ax.bar([b[0] for b in BARS], [b[1] for b in BARS], color=[b[2] for b in BARS], width=0.62)
     for i, b in enumerate(BARS):
-        ax.text(i, b[1] + 1.5, f"{b[1]}%", ha="center", fontsize=34, fontweight="bold")
+        ax.text(i, b[1] + 2.5, f"{b[1]}%", ha="center", fontsize=34, fontweight="bold")
     ax.set_ylim(0, 75)
     ax.set_yticks([])
     ax.tick_params(axis="x", labelsize=22, length=0)
     for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
+    fig.text(0.04, 0.91, "Where does a code graph help a bug-fixing agent?", fontsize=30, ha="left")
     fig.text(
-        0.008, 0.93, "Where does a code graph help a bug-fixing agent?", fontsize=32, ha="left"
-    )
-    ax.set_title(
-        "Plain text search finds the edit site as well as any graph tool\n"
-        "tasks with a gold node in the top 10 (116 tasks, 4 Python libraries)",
-        fontsize=19,
-        loc="left",
+        0.04,
+        0.835,
+        "Plain text search finds the edit site as well as any graph tool.",
+        fontsize=20,
+        ha="left",
         color=style.PALETTE["grey"],
-        fontweight="normal",
+    )
+    fig.text(
+        0.04,
+        0.785,
+        "Share of tasks with a gold node in the top 10 (116 tasks, 4 Python libraries)",
+        fontsize=17,
+        ha="left",
+        color=style.PALETTE["grey"],
     )
     fig.set_layout_engine("none")
-    ax.set_position([0.04, 0.14, 0.93, 0.58])
+    ax.set_position([0.04, 0.14, 0.93, 0.56])
     return fig
 
 
