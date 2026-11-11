@@ -323,3 +323,18 @@ pod was terminated and verified gone. [measured]
   minutes). The pod ran about 35 minutes at 0.99 USD/h, so about 0.58 USD is the upper figure.
 - **Fixes found:** the job's outer "no progress" warning counts only some log lines, so it fires
   during a healthy eval; the kernel's own `HEARTBEAT` line is the signal to trust.
+
+## 10. The pod's task environment is not Kaggle's (2026-11-12)
+
+A first full GEM-31 replicate on an L40S (6 minutes per task) was stopped after 3 of 36 tasks because
+the agent reported `pytest is not installed in the environment`. [measured, from the pod log]
+The subprocess sandbox builds a venv with `system_site_packages` and adds the host's site-packages
+(`swegemma/sandbox/subprocess.py`), so the host Python must already hold pytest and the repositories'
+test dependencies. Kaggle's base image does; our `python:3.12` pod plus `pod/gpu_setup.sh` does not.
+- The 2-task probe in section 9 had the same gap, so its 0 of 2 resolved is not evidence about the agent.
+  Its throughput and start-up numbers stand.
+- Any pod run needs the host environment fixed first, and a check before the eval that a known-solvable
+  task resolves with its gold patch. A failed run cost about 2.7 USD in total (pods that waited for the
+  upload, the failed download attempt and this one).
+- Comparison with the Kaggle runs also needs the same GPU class: this card was about 30% slower per task
+  than Kaggle's 4 x L4, and the 8-minute task limit is wall-clock.
