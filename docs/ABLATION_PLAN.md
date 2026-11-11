@@ -30,7 +30,9 @@ variants cheaply there, run only finalists here.
 | Id | Arm | Lever | Card |
 |---|---|---|---|
 | A0 | Baseline bundle (graph tools banned by prompt) | none | GEM-10 |
-| A1 | Same, prompt allows graph tools | prompt | GEM-13 |
+| A1 | Same, prompt allows graph tools (`experiments/bundles/graph_v1`) | prompt | GEM-13 |
+| A1b | A1 plus a note that the graph has no async, test or docs_src nodes (`graph_blind_v1`) | prompt | GEM-68 |
+| A4 | Baseline plus a required targeted-test step (`tests_v1`) | prompt | GEM-31 |
 | A2 | Localizer skill, one call returns top 10 | skill | GEM-80, 82 |
 | A3 | A2 plus co-change suggestions | skill | GEM-81 |
 | B1 | Tool-call limit 28 vs 40 | limits | GEM-14 |
