@@ -338,3 +338,15 @@ test dependencies. Kaggle's base image does; our `python:3.12` pod plus `pod/gpu
   upload, the failed download attempt and this one).
 - Comparison with the Kaggle runs also needs the same GPU class: this card was about 30% slower per task
   than Kaggle's 4 x L4, and the 8-minute task limit is wall-clock.
+
+### Fix for section 10 (2026-11-12)
+
+`pod/test_env.sh` now installs the test stack at the versions of Kaggle's competition image (read from a
+CPU kernel on that image: Python 3.12.13, pytest 8.4.2, starlette 0.52.1, pydantic 2.12.3, anyio 4.13.0,
+python-multipart 0.0.26 and so on). `pod/env_check.py` runs before the model is fetched: three tasks that
+every Kaggle dev run solved must pass their tests with the gold patch, or the job stops after about 10 s.
+On a CPU pod all three controls pass. [measured] The official Docker grader unpacks the highest cached
+version of each package (starlette 1.6.0), which differs from the Kaggle subprocess image we matched;
+which one the leaderboard uses is unknown. Task patches carry `---`/`+++` headers and no trailing newline.
+Tasks whose tests import `dirty_equals`, `inline_snapshot` or need `pytest-httpbin` cannot pass in either
+environment (A39).

@@ -55,6 +55,13 @@ def main(argv: list[str]) -> int:
     if shutil.which("nvidia-smi"):
         query = "--query-gpu=name,driver_version,memory.total"
         subprocess.run(["nvidia-smi", query, "--format=csv"], check=False)
+    log("STAGE test-env")
+    run(["bash", str(HERE / "test_env.sh")])
+    if ids := os.environ.get("CONTROL_IDS"):
+        log("STAGE env-check")
+        run([sys.executable, str(HERE / "env_check.py"), str(data), ids])
+    if os.environ.get("ENV_CHECK_ONLY"):
+        return 0
     wheels, models = fetch(work)
     log("STAGE setup")
     run(["bash", str(HERE / "gpu_setup.sh")], {"WHEELHOUSE": str(wheels)})
