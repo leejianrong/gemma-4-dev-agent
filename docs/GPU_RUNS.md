@@ -299,3 +299,27 @@ paid run, set `RP_MAX_HOURLY_USD` above the card's price, as in the command abov
 already), 6 (real throughput on one GPU), 7 (host driver for CUDA 12.8) and 8 (the Kaggle base image
 on RunPod: unnecessary, we use `python:3.12`). A first run should watch the logs for vLLM startup
 and the tensor-parallel setting (the runner picks 1 for one GPU).
+
+## 9. First GPU probe (2026-11-11)
+
+One pod, 2 dev tasks, baseline bundle, 31B w4a16 on one card. The pipeline worked end to end and the
+pod was terminated and verified gone. [measured]
+
+- **Capacity.** Spot pods are no longer offered. The A40 is no longer in `runpodctl gpu list`. On
+  community cloud, no 48 GB card had stock (all listed as "Low"). On secure cloud an RTX 6000 Ada
+  (48 GB, 0.99 USD/h, driver 595.91.07) was free; the RTX A6000 (0.59 USD/h) was not. Launch with
+  `RP_INTERRUPTIBLE=false RP_CLOUD_TYPE=SECURE` and a list of acceptable cards.
+- **Unknown 4, vLLM on one 48 GB Ada card: works.** vLLM 0.19.1 with tensor parallel 1 was up after
+  198 s (494 s on Kaggle's 4 x L4). The weights took about 21 GB and vLLM used 44 GB of 49 GB.
+- **Unknown 7, driver for CUDA 12.8: works** (driver 595.91.07).
+- **Unknown 6, throughput.** 2 tasks took 270 s and 219 s (28 tool calls each, one hit the tool
+  budget). Kaggle's 4 x L4 averaged 4.6 to 5.0 min per task, so this card is about 15 to 25% faster
+  per task. Two tasks is a small sample.
+- **Start-up measured:** data 3 min, model download 4.7 min (283 s), installs about 6 min, vLLM 3.3 min.
+  Total about 17 min before the first task.
+- **Cost of one 36-task replicate on this card:** about 17 min + 36 x 4.1 min = 2.8 h, so about 2.8 USD
+  at 0.99 USD/h. [estimate from 2 tasks]
+- **Probe cost:** the balance fell from 15.156 to 14.795 USD, 0.36 USD (it can lag the pod's last
+  minutes). The pod ran about 35 minutes at 0.99 USD/h, so about 0.58 USD is the upper figure.
+- **Fixes found:** the job's outer "no progress" warning counts only some log lines, so it fires
+  during a healthy eval; the kernel's own `HEARTBEAT` line is the signal to trust.
