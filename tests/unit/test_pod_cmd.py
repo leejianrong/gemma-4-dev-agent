@@ -34,3 +34,11 @@ def test_extra_env_pairs_are_exported_before_the_job(tmp_path):
     cmd = command(a, "t", ["WANT_SNAPSHOTS=1", "MAX_MIB=30000"])
     assert "export WANT_SNAPSHOTS=1\n" in cmd and "export MAX_MIB=30000\n" in cmd
     assert cmd.index("export MAX_MIB") < cmd.index("bash job.sh")
+
+
+def test_shipped_files_are_written_beside_the_job_before_it_runs(tmp_path):
+    a, k = tmp_path / "a.py", tmp_path / "kernel.py"
+    a.write_text("x = 1\n")
+    k.write_text("y = 2\n")
+    cmd = command(a, "t", files=[k])
+    assert "> kernel.py\n" in cmd and cmd.index("> kernel.py") < cmd.index("bash job.sh")

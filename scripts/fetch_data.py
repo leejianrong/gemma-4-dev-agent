@@ -40,6 +40,8 @@ def wanted(rows, snapshots: str, scored_ids: set[str]) -> list[tuple[str, int]]:
     for name, size in rows:
         if name == "tasks.jsonl" or name.startswith(("graphs/", "embeddings/")):
             out.append((name, size))
+        elif name.startswith("wheels/") and snapshots != "none":  # test dependencies, 27 MiB
+            out.append((name, size))
         elif name.startswith("snapshots/") and snapshots != "none":
             tid = name.removeprefix("snapshots/").removesuffix(".tgz")
             if snapshots == "all" or tid in scored_ids:

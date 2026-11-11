@@ -29,8 +29,15 @@ import threading
 import time
 from pathlib import Path
 
-ER_WHEELHOUSE = Path("/kaggle/input/datasets/metric/gemma-4-developer-agent-wheelhouse")
-ER_MODEL_ROOT = Path("/kaggle/input/models/google/gemma-4/other")
+# Kaggle mounts these read-only; a pod downloads them elsewhere and sets the two env vars.
+ER_WHEELHOUSE = Path(
+    os.environ.get(
+        "ER_WHEELHOUSE_DIR", "/kaggle/input/datasets/metric/gemma-4-developer-agent-wheelhouse"
+    )
+)
+ER_MODEL_ROOT = Path(
+    os.environ.get("ER_MODEL_ROOT_DIR", "/kaggle/input/models/google/gemma-4/other")
+)
 ER_ENV = {
     "TRANSFORMERS_NO_TF": "1",
     "TRANSFORMERS_NO_FLAX": "1",

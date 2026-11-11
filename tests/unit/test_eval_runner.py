@@ -232,3 +232,27 @@ def test_full_patch_and_test_output_are_saved_per_task(tmp_path):
 
 def test_a_harness_error_message_makes_the_status_error():
     assert er.er_status(res(error_message="sandbox died"), 28, 480) == "error"
+
+
+def _runner_paths(monkeypatch, **env):
+    import importlib
+
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    mod = importlib.reload(er)
+    return mod.ER_WHEELHOUSE, mod.ER_MODEL_ROOT
+
+
+def test_wheelhouse_and_model_paths_default_to_kaggle_mounts_and_can_be_moved(monkeypatch):
+    for k in ("ER_WHEELHOUSE_DIR", "ER_MODEL_ROOT_DIR"):
+        monkeypatch.delenv(k, raising=False)
+    wheels, models = _runner_paths(monkeypatch)
+    assert str(wheels).startswith("/kaggle/input/datasets/metric/")
+    assert str(models) == "/kaggle/input/models/google/gemma-4/other"
+    wheels, models = _runner_paths(
+        monkeypatch, ER_WHEELHOUSE_DIR="/srv/wh", ER_MODEL_ROOT_DIR="/srv/models"
+    )
+    assert (str(wheels), str(models)) == ("/srv/wh", "/srv/models")
+    monkeypatch.delenv("ER_WHEELHOUSE_DIR")
+    monkeypatch.delenv("ER_MODEL_ROOT_DIR")
+    assert str(_runner_paths(monkeypatch)[1]).startswith("/kaggle/")  # leave the module as found
