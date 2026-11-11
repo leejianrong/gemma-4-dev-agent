@@ -10,6 +10,7 @@ environment.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -51,6 +52,9 @@ def main(argv: list[str]) -> int:
     work = Path(os.environ.get("GPU_WORK", "/workspace/gpu"))
     work.mkdir(parents=True, exist_ok=True)
     out.mkdir(parents=True, exist_ok=True)
+    if shutil.which("nvidia-smi"):
+        query = "--query-gpu=name,driver_version,memory.total"
+        subprocess.run(["nvidia-smi", query, "--format=csv"], check=False)
     wheels, models = fetch(work)
     log("STAGE setup")
     run(["bash", str(HERE / "gpu_setup.sh")], {"WHEELHOUSE": str(wheels)})

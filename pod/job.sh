@@ -72,7 +72,7 @@ step() {
 
 heartbeat() {
   trap - ERR
-  local t0 quiet lp disk mem load mb st
+  local t0 quiet lp disk mem load mb st gpu
   t0=$(now)
   while :; do
     sleep "$HB_SECS"
@@ -83,7 +83,8 @@ heartbeat() {
     load=$(cut -d' ' -f1 /proc/loadavg)
     mb=$(du -sm "$DATA" 2>/dev/null | cut -f1)
     st=$(cat "$RUN/stage" 2>/dev/null)
-    echo "hb stage=$st up=$(($(now) - t0))s quiet=${quiet}s load=$load disk=${disk}% mem=${mem}% data=${mb}MiB"
+    gpu=$(nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader 2>/dev/null | tr -d ' ' | paste -sd/ -)
+    echo "hb stage=$st up=$(($(now) - t0))s quiet=${quiet}s load=$load disk=${disk}% mem=${mem}% data=${mb}MiB${gpu:+ gpu=$gpu}"
     [ "$quiet" -gt "$QUIET_WARN" ] && warn "no progress for ${quiet}s in stage $st"
     [ "$disk" -gt 90 ] && warn "disk ${disk}% full"
     [ "$mem" -gt 90 ] && warn "memory ${mem}% used"
