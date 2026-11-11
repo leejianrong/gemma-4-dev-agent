@@ -3,6 +3,8 @@
 # PIP_EXTRA="numpy ..." installs extra packages for the analysis script.
 # WANT_SNAPSHOTS=1 also fetches snapshots/ (about 20 GB; raise MAX_MIB and the pod disk);
 # SNAP_IDS=id1,id2,... limits that to those tasks.
+# RECV_CODE=<runpodctl code> first receives a data.tar sent from the laptop into data/; files that
+# match the Kaggle listing by size are then not downloaded again.
 #
 # Observability contract (grep these tokens in `pod logs`):
 #   STAGE <name>        a stage began          STAGE failed (...)  the job is dying, with the stage
@@ -34,6 +36,7 @@ T_DL="${T_DL:-1500}"
 T_FILE="${T_FILE:-180}"
 T_ANALYZE="${T_ANALYZE:-900}"
 T_SEND="${T_SEND:-900}"
+T_RECV="${T_RECV:-3600}"
 
 mkdir -p "$DATA" "$OUT"
 : >"$RUN/job.log"
@@ -160,6 +163,17 @@ fi
 have "$KAGGLE" || die "kaggle CLI not on PATH after install"
 progress
 
+# ---- receive: data uploaded from the laptop (RECV_CODE) instead of downloaded from Kaggle -----------
+if [ -n "${RECV_CODE:-}" ]; then
+  stage receive
+  have "$RUNPODCTL" || die "runpodctl missing: cannot receive the uploaded data"
+  (cd "$RUN" && step "receive data" "$T_RECV" "$RUNPODCTL" receive "$RECV_CODE") || die "receive failed"
+  step "unpack data" "$T_RECV" tar -xf "$RUN/data.tar" -C "$DATA" || die "unpack failed"
+  rm -f "$RUN/data.tar"
+  echo "received: $(find "$DATA" -type f | wc -l) files, $(du -sm "$DATA" | cut -f1)MiB"
+  progress
+fi
+
 # ---- auth probe: the cheapest possible call, so a bad token or un-accepted rules show in seconds ---
 stage auth
 rc=0
@@ -214,6 +228,7 @@ dl_one() {
   local name=$1 size=$2 dest="$DATA/$1" dir tries=0
   dir=$(dirname "$dest")
   mkdir -p "$dir"
+  if [ -f "$dest" ] && [ "$(stat -c %s "$dest")" = "$size" ]; then echo "$name" >>"$RUN/dl.done"; return 0; fi
   while [ "$tries" -lt 3 ]; do
     tries=$((tries + 1))
     if timeout "$T_FILE" "$KAGGLE" competitions download "$COMP" -f "$name" -p "$dir" -q >>"$RUN/dl.log" 2>&1; then
