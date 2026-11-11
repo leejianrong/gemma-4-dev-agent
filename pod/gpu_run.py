@@ -51,6 +51,9 @@ def main(argv: list[str]) -> int:
     work = Path(os.environ.get("GPU_WORK", "/workspace/gpu"))
     work.mkdir(parents=True, exist_ok=True)
     out.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv"], check=False
+    )
     wheels, models = fetch(work)
     log("STAGE setup")
     run(["bash", str(HERE / "gpu_setup.sh")], {"WHEELHOUSE": str(wheels)})
