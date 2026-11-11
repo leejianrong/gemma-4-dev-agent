@@ -23,9 +23,10 @@ flowchart LR
 | Edit-site search, 116 tasks, hit@10 | BM25 55%, BM25 then call graph 54%, then embeddings 50% |
 | Localizer skill, same tasks | 56.9% hit@10, about 0.2 s per task |
 | Same-file sibling list, 50 multi-site tasks | 63% recall, 13.5% precision |
+| Skill in the agent, 36 dev tasks, 2 replicates | baseline 13, 15 resolved; skill 14, 14 (no effect detected) |
 
 Every number is tagged in [`docs/QUESTIONS.md`](docs/QUESTIONS.md); the paper draft is
-[`paper/DRAFT.md`](paper/DRAFT.md). We have not yet run the skill inside an agent.
+[`paper/DRAFT.md`](paper/DRAFT.md).
 
 ## Quick start
 
