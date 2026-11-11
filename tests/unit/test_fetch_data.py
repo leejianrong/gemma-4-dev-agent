@@ -25,3 +25,9 @@ def test_wanted_filters_snapshots_by_mode():
     assert "snapshots/x_1.tgz" in [n for n, _ in fd.wanted(rows, "scored", {"x_1"})]
     assert "snapshots/y_2.tgz" not in [n for n, _ in fd.wanted(rows, "scored", {"x_1"})]
     assert len(fd.wanted(rows, "all", set())) == 4
+
+
+def test_test_dependency_wheels_come_with_snapshots_only():
+    rows = [("tasks.jsonl", 1), ("wheels/a.whl", 2), ("snapshots/x_1.tgz", 3)]
+    assert "wheels/a.whl" not in [n for n, _ in fd.wanted(rows, "none", set())]
+    assert "wheels/a.whl" in [n for n, _ in fd.wanted(rows, "scored", {"x_1"})]

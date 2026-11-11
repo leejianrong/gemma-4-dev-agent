@@ -231,3 +231,71 @@ the leaderboard grader has more wheels is unknown. Keep the 9 tasks out of the d
 runs use the public cache, and write "unscoreable in our runs" in the paper, not "unscoreable for every
 entry". I did not run the 30 optional extra tasks: with the controls failing, an extrapolation would
 mean nothing. [guess]
+
+## 8. GPU route prep (2026-11-11)
+
+Nothing here launched a GPU pod. One CPU pod ran for about 5 minutes. [measured]
+
+**Unknowns 1 and 2: resolved.** In a throwaway `python:3.12-slim` container with the real wheelhouse,
+`pod/gpu_setup.sh` installed cleanly in 13 minutes (7 GB of site-packages) and the imports worked.
+Resolved versions: torch 2.10.0 (CUDA 12.8 build), torchvision 0.25.0, torchaudio 2.10.0,
+litellm 1.109.0, vllm 0.19.1, google-adk 1.36.1, swegemma 0.2.11, adk-submission 0.2.13,
+transformers 5.22.2, numpy 2.2.6. `import litellm, torch`, `from adk_submission import VllmServer`
+and `from swegemma.evaluate import Evaluator` all succeed, so unknown 7's wheel side is settled too
+(the driver side still needs a pod). The runner later reinstalls the wheelhouse with `--no-deps`, which
+moves transformers to the wheelhouse's 5.13.1; that step was not run here. [measured]
+
+**Unknown 3: download speed, mostly resolved.** A CPU pod pulled the model from Kaggle with the
+main account's token for 240 s: 8 to 12 GiB arrived (the file is preallocated in 4 GiB steps, so
+the exact figure is a range), about 35 to 50 MiB/s, and no HTTP 429. The 23 GB model should take
+8 to 11 minutes. Cost 0.02 to 0.05 USD. [measured] The earlier 2 to 21 MB/s was Kaggle's data
+download to a laptop and an older pod; this route was faster.
+
+**What changed in the repo.**
+- `pod/eval_runner.py` reads the wheelhouse and model folders from `ER_WHEELHOUSE_DIR` and
+  `ER_MODEL_ROOT_DIR`; the Kaggle mounts stay the defaults. The data and output folders were already
+  `DATA_DIR` and `OUT_DIR`.
+- `pod/gpu_setup.sh`: the pinned install order above, with a version and import check.
+- `pod/gpu_run.py`: the step `pod/job.sh` runs instead of the analysis on a GPU pod. It downloads the
+  wheelhouse and model, runs `gpu_setup.sh`, then the built eval kernel with the four env vars.
+- `pod/pod_cmd.py` accepts `@file` arguments to ship `kernel.py` and `gpu_setup.sh` inside the start
+  command. `pod/job.sh` fetches `wheels/` (the tests' dependency cache) when `WANT_SNAPSHOTS=1`, and
+  skips its graph-analysis sanity check for other reports. `scripts/fetch_data.py` fetches `wheels/`
+  with snapshots too.
+- Rehearsed free: `job.sh` into `gpu_run.py` into a stub kernel against the fake Kaggle and relay
+  CLIs: stages, env wiring, report and relay code all worked. A real kernel was not run.
+
+**How to run one 36-task replicate (not yet run).** Build the kernel, build the start command (it
+embeds the Kaggle token by name from `.env`; never print it), launch, pull the artifact, tear down:
+
+```
+IDS=$(python3 -c "import json;print(','.join(json.load(open('data/dev_subset.json'))['ids']))")
+SUBMISSION_DIR=experiments/bundles/tests_v1 EVAL_TASKS="$IDS" EVAL_RUN_ID=dev-a3-r1-pod \
+  EVAL_SEED=1 EVAL_MAX_MIN=480 python3 kaggle/build_kernel.py leejianrong eval
+export RP_POD_IMAGE=python:3.12 RP_COMPUTE_TYPE=GPU RP_GPU_TYPE="NVIDIA A40" \
+  RP_CONTAINER_DISK_GB=150 RP_MAX_HOURLY_USD=0.80 RP_MAX_LIFETIME_SECS=21600
+RP_JOB_CMD="$(python3 pod/pod_cmd.py pod/gpu_run.py @pod/gpu_setup.sh @kaggle/eval_kernel/kernel.py \
+  WANT_SNAPSHOTS=1 SNAP_IDS=$IDS DISK_PERCENT=120 MAX_MIB=12000 T_DL=3000 T_ANALYZE=18000)" \
+  ~/.claude/skills/runpod-jobs/scripts/with-runpod-key ~/.claude/skills/runpod-jobs/scripts/rp up \
+  >up.raw 2>&1   # then scrub up.raw with pod.scrub before reading it
+```
+
+Then `rp relay-get DIR` for the artifact (`out/` holds `task_results.csv`, `summary.json`, traces),
+and `rp down`. Check `runpodctl pod list` is empty and log the cost.
+
+**Cost per 36-task replicate.** Start-up is about 0.5 h: model download 8 to 11 min, installs about
+13 min, vLLM start about 8 min (494 s on Kaggle). [measured pieces] Run time per task is a guess:
+Kaggle's 4 x L4 took 2.8 to 3.0 h for 36 tasks. [measured]
+
+| GPU | Run hours [guess] | Total hours | Price | Cost |
+|---|---|---|---|---|
+| A40 48 GB | 3 to 4 | 3.5 to 4.5 | 0.59 | about 2.1 to 2.7 USD |
+| A100 80 GB secure | 1.5 to 2.5 | 2 to 3 | 1.79 | about 3.6 to 5.4 USD |
+
+The 10 USD cap allows two A40 replicates, or one A100 replicate plus a probe. Before the first
+paid run, set `RP_MAX_HOURLY_USD` above the card's price, as in the command above.
+
+**Remaining GPU unknowns.** 4 (vLLM 0.19.1 on an A40), 5 (skill sees `/workspace`: answered by A38
+already), 6 (real throughput on one GPU), 7 (host driver for CUDA 12.8) and 8 (the Kaggle base image
+on RunPod: unnecessary, we use `python:3.12`). A first run should watch the logs for vLLM startup
+and the tensor-parallel setting (the runner picks 1 for one GPU).

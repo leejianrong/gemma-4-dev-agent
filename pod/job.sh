@@ -189,6 +189,7 @@ done
 awk -F, -v snaps="${WANT_SNAPSHOTS:-0}" -v ids=",${SNAP_IDS:-}," \
   '{ id = $1; sub(/^snapshots\//, "", id); sub(/\.tgz$/, "", id) }
    $1=="tasks.jsonl" || $1 ~ /^graphs\// || $1 ~ /^embeddings\// ||
+   (snaps=="1" && $1 ~ /^wheels\//) ||
    (snaps=="1" && $1 ~ /^snapshots\// && (ids==",," || index(ids, "," id ","))) {print $1" "$2}' \
   "$RUN/listing.csv" >"$RUN/want.tsv"
 n_g=$(grep -c '^graphs/' "$RUN/want.tsv" || true)
@@ -312,6 +313,8 @@ step "explore" "$T_ANALYZE" python3 "${EXPLORE_PY:-$HERE/explore.py}" "$DATA" "$
 python3 - "$OUT/report.json" <<'PY' || true
 import json, sys
 r = json.load(open(sys.argv[1]))
+if "with_graph" not in r:  # not the graph analysis (the GPU eval writes its own report)
+    sys.exit(0)
 if r["tasks"] < 100:
     print("WARN only", r["tasks"], "tasks parsed")
 if r["with_graph"] < 0.9 * r["tasks"]:
