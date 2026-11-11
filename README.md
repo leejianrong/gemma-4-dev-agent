@@ -24,6 +24,7 @@ flowchart LR
 | Localizer skill, same tasks | 56.9% hit@10, about 0.2 s per task |
 | Same-file sibling list, 50 multi-site tasks | 63% recall, 13.5% precision |
 | Skill in the agent, 36 dev tasks, 2 replicates | baseline 13, 15 resolved; skill 14, 14 (no effect detected) |
+| Run-a-test prompt, 36 dev tasks, 1 replicate (RunPod) | 15 resolved; the agent mostly ignored it |
 
 Every number is tagged in [`docs/QUESTIONS.md`](docs/QUESTIONS.md); the paper draft is
 [`paper/DRAFT.md`](paper/DRAFT.md).
