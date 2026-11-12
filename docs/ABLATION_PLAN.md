@@ -33,6 +33,9 @@ variants cheaply there, run only finalists here.
 | A1 | Same, prompt allows graph tools (`experiments/bundles/graph_v1`) | prompt | GEM-13 |
 | A1b | A1 plus a note that the graph has no async, test or docs_src nodes (`graph_blind_v1`) | prompt | GEM-68 |
 | A4 | Baseline plus a required targeted-test step (`tests_v1`) | prompt | GEM-31 |
+| A5 | Counted call plan: first edit by call 5 (`first_edit_v1`) | prompt | GEM-29 |
+| A6 | Concrete edit_file retry steps keyed on the real error text (`edit_retry_v1`) | prompt | GEM-30 |
+| A7 | One-line stated doubt before each tool call (`doubt_v1`) | prompt | GEM-32 |
 | A2 | Localizer skill, one call returns top 10 | skill | GEM-80, 82 |
 | A3 | A2 plus co-change suggestions | skill | GEM-81 |
 | B1 | Tool-call limit 28 vs 40 | limits | GEM-14 |
