@@ -1,10 +1,42 @@
 # GPU runs and the gold-patch check: feasibility (GEM-88)
 
-Design only. Nothing here was launched and no money was spent. Written 2026-11-09.
+**Status (2026-11-12): sections 1 to 6 are the original design (2026-11-09), kept for their numbers.
+Sections 8 to 12 are what we actually did; where they disagree with 1 to 6, they win.** The current
+recipe is in "How we run a pod today" below.
+
+Written 2026-11-09 as a design; nothing was launched then.
 Every claim carries a tag: **[docs]** read in the harness guide or our repo, **[measured]** we
 looked it up or ran it, **[guess]** an estimate that a real attempt must confirm.
 
+## How we run a pod today
+
+- **Data goes up from this machine** with `runpodctl send` (`pod/job.sh` `RECV_CODE`), not down from
+  Kaggle: Kaggle answers HTTP 429 to the pod's temporary token after about 260 files. The model and the
+  wheelhouse still come from Kaggle with that token (they work). Pack list: `tasks.jsonl`, `graphs`,
+  `embeddings`, `wheels`, and `snapshots/<id>.tgz` for the 36 ids in `data/dev_subset.json` (7.8 GiB).
+  The temp folder can be wiped; rebuild the tarball from that list.
+- **Environment gate:** `pod/test_env.sh` pins the test stack to Kaggle's image and `pod/env_check.py`
+  runs three tasks every Kaggle run solved with their gold patches before the model is fetched
+  (`CONTROL_IDS`). A failed gate stops the job in about 10 s.
+- **Launch:** secure cloud, on-demand only (`RP_CLOUD_TYPE=SECURE RP_INTERRUPTIBLE=false`; spot is gone),
+  a list of acceptable cards in `RP_GPU_TYPE`, `RP_MAX_HOURLY_USD` just above the card price, a
+  lifetime cap of about 1.3x the expected run. `rp up` reuses a pod with the same name, so terminate the
+  old one first and give parallel pods different `RP_POD_NAME` and `RP_STATE_FILE`.
+- **Cards and cost (36 dev tasks, one replicate):** 31B needs 48 GB: L40S 1.09 USD/h, about 3.9 USD
+  (RTX 6000 Ada 0.99, RTX A6000 0.59 when in stock). E4B and E2B fit RTX 2000 Ada 16 GB at 0.24 USD/h:
+  about 0.5 USD. The A40 is no longer listed. Stock is usually "Low"; retry every few minutes.
+- **Watching:** `pod logs --tail` accepts at most 5000 lines. RunPod's API times out for a minute now
+  and then: a failed `pod list` means "unknown", never "pod gone". The job's own "no progress" warning
+  fires during healthy evals; trust the kernel's `HEARTBEAT` line.
+- **Spend** is tracked in the auto-memory file `runpod-spend-tracking.md`, not in the repo. About 8.1 USD
+  of the 10 USD cap was used by 2026-11-12.
+- **Kaggle instead:** L4x4 notebooks use the weekly GPU quota at twice the rate (about 15 h a week, so
+  about five 36-task runs); a replicate takes about 2.9 h there. Same hardware as the leaderboard.
+- **Colab T4:** not tried; see section 11.
+
 ## Short answers
+
+_Status: answer 2 is outdated. The A40 is no longer offered and spot pods are gone; the 48 GB cards that worked are in the recipe above. Answer 1 held: one debug round was needed (sections 8 to 10)._
 
 1. **Can `pod/eval_runner.py` run on a RunPod GPU pod?** Yes in principle, with one change of
    mindset: the runner is a Kaggle kernel script, so the pod must fake three Kaggle paths and
@@ -60,6 +92,8 @@ turns `raw/traces` into contract traces, `scripts/log_run.py` adds the `runs.csv
 
 ## 2. A pod job, step by step
 
+_Status: superseded by the recipe above and section 8: data is uploaded, not downloaded (step 3), and there is an environment gate._
+
 Same style as `pod/job.sh` and `pod/pod_cmd.py`: scripts travel inside the start command,
 gzip plus base64, with the dead-man's switch first. [docs] runpod-jobs skill
 
@@ -83,6 +117,8 @@ gzip plus base64, with the dead-man's switch first. [docs] runpod-jobs skill
 8. **Verify** that `pod list` no longer shows our pod, then log the cost against the 10 USD cap.
 
 ## 3. GPU choice and cost
+
+_Status: prices and stock are from 2026-11-09 and are out of date (A40 gone, spot gone, hours per run guessed). Measured numbers are in sections 9, 12 and the recipe above._
 
 Prices are from `runpodctl gpu list` on 2026-11-09 [measured]; every stock status read "Low" or
 "none", so availability is a risk of its own.
@@ -116,6 +152,8 @@ The pod route is good for the probe and one or two replicates. The bulk of the r
 stay on Kaggle's free quota, or the cap needs raising.
 
 ## 4. Unknowns, cheapest to resolve first
+
+_Status: all resolved: 1 to 3 in section 8, 4 to 7 in sections 9 and 10._
 
 | # | Unknown | How to resolve it | Cost |
 |---|---|---|---|
@@ -189,6 +227,8 @@ the same way, they are intrinsic gaps. If it passes, our agent's patch was the c
 
 ## 6. Proposed next cards
 
+_Status: all done (sections 7 to 9); `scripts/fetch_data.py` and `pod/gpu_run.py` exist._
+
 1. Clear unknowns 1 to 3 on one CPU pod (or locally), about 0.30 USD.
 2. Run route A of the gold-patch check; decide whether the requests tasks leave the dev subset.
 3. One GPU attempt on an A40 that ends after the GEM-79 skill probe (unknowns 4, 5, 7).
@@ -233,6 +273,8 @@ entry". I did not run the 30 optional extra tasks: with the controls failing, an
 mean nothing. [guess]
 
 ## 8. GPU route prep (2026-11-11)
+
+_Status: the launch command in this section is superseded: it downloads data from Kaggle (429) and has no environment gate. Use the recipe above._
 
 Nothing here launched a GPU pod. One CPU pod ran for about 5 minutes. [measured]
 
@@ -301,6 +343,8 @@ on RunPod: unnecessary, we use `python:3.12`). A first run should watch the logs
 and the tensor-parallel setting (the runner picks 1 for one GPU).
 
 ## 9. First GPU probe (2026-11-11)
+
+_Status: throughput and start-up numbers stand; the 0 of 2 resolved does not (section 10)._
 
 One pod, 2 dev tasks, baseline bundle, 31B w4a16 on one card. The pipeline worked end to end and the
 pod was terminated and verified gone. [measured]

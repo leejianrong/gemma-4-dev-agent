@@ -1,6 +1,6 @@
 # Gemma 4 Developer Agent: Plan
 
-Status: agreed (2026-11-07) · Milestone: M1 = reproduce + ablate + paper (Nov 12); M2 = beat baseline + two final submissions (Dec 2); M3 = advanced methods (open-ended)
+Status: agreed (2026-11-07), updated 2026-11-12: M1 is over (the paper deadline of 2026-11-12 has passed; the draft is `paper/DRAFT.md`), work is now M2 and the small-model track · Milestone: M1 = reproduce + ablate + paper (Nov 12); M2 = beat baseline + two final submissions (Dec 2); M3 = advanced methods (open-ended)
 
 ## Problem
 
@@ -62,7 +62,7 @@ A repo that builds `submission/` (YAML config, prompts, optional LoRA), packages
 - Dev protocol: 129 public tasks split by repo (hold out one repo). Judge a change only on replicated runs; treat differences under 3 tasks as noise (A18).
 - Config limits start from the best public values (8 min, 28 calls, 240 s command timeout, 80 turns) and move only from measured throughput.
 - The baseline prompt keeps the original attribution (Apache-2.0).
-- Local machine: editing, packaging, CI. All inference on Kaggle.
+- Local machine: editing, packaging, CI, analysis in a container. Model inference runs on Kaggle L4x4 (weekly quota) or a RunPod pod (`docs/GPU_RUNS.md`).
 
 ## Testing approach
 
@@ -80,6 +80,8 @@ See `docs/QUESTIONS.md` A1–A20. Load-bearing ones:
 | A12 | Dec 2 main final deadline (Nov 12 paper is confirmed) | Miss the main deadline; verify on Kaggle |
 
 ## Open risks
+
+_Status 2026-11-12: the first two risks below (paper in 5 days, paper entry) are past. Still live: throughput on the full run (GEM-34), small public set, one daily leaderboard submission, and GPU access (Kaggle quota, RunPod cap of 10 USD, about 1.8 USD left)._
 
 - **Paper in 5 days (V1–V3).** Nothing is scored yet and Kaggle GPU quota is unknown. The paper may have to report a small, honest ablation. Earliest check: V1.
 - **Paper entry is separate.** The owner must join the paper-track competition and accept its rules; only a *submitted* Writeup counts. Earliest check: today.
