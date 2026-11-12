@@ -19,6 +19,7 @@ tag every number in the paper), plan `docs/PLAN.md`, decisions `docs/adr/`, run 
 - `make check` = lint + unit tests + submission pre-flight. Same as pre-push and CI.
 - `make score-local` scores the localizer on `data/competition` inside an isolated container.
 - `make dash` serves the indah dashboards; `make zip` builds `dist/submission.zip`.
+- `make task-features` relates dev-task outcomes to task features (aggregates only; `docs/FAILURE_ANALYSIS.md`).
 - `make rehearse` has one failing scenario (`quiet`) on main that predates our edits; ignore it.
 
 ## Rules that are not obvious from the code
