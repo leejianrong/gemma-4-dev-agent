@@ -16,6 +16,7 @@ kaggle.json
 credentials.json
 
 # Tooling
+*:Zone.Identifier
 .venv/
 __pycache__/
 .pytest_cache/
