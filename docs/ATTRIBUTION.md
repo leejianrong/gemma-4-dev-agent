@@ -19,3 +19,10 @@ Things in this baseline that are choices, not facts about the harness: 28 tool c
 80 turns (the harness defaults are 100 calls, 60 minutes, 500 turns), and a prompt that tells the
 agent never to use the three graph tools. The second matches our measurements (A27, A28) but the
 first limits the agent more than it needs to; treat both as ablation targets (GEM-12).
+
+## Apache Beam vLLM notebook (reference only)
+
+`docs/reference/colab/beam_run_inference_vllm.ipynb` is the Apache Beam example notebook "Run ML
+inference by using vLLM on GPUs" (apache/beam, `examples/notebooks/beam-ml/run_inference_vllm.ipynb`),
+Apache License 2.0, copyright the Apache Software Foundation. It is kept unchanged, with its license
+header, as a reference for running vLLM on a Colab T4. We do not run it. Ruff skips `docs/reference/`.

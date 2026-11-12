@@ -31,6 +31,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["docs/reference"]  # third-party files kept as they were
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

@@ -350,3 +350,18 @@ version of each package (starlette 1.6.0), which differs from the Kaggle subproc
 which one the leaderboard uses is unknown. Task patches carry `---`/`+++` headers and no trailing newline.
 Tasks whose tests import `dirty_equals`, `inline_snapshot` or need `pytest-httpbin` cannot pass in either
 environment (A39).
+
+## 11. Colab T4 (not tried)
+
+Reference: `docs/reference/colab/beam_run_inference_vllm.ipynb` (Apache Beam's notebook, Colab T4,
+credit in `docs/ATTRIBUTION.md`). What it shows that we need:
+- It runs `vllm.entrypoints.openai.api_server` in a notebook cell, the same server our harness expects.
+- Its Gemma cell says the default T4 runtime does not support the full data type precision Gemma needs, so
+  `--dtype=half` is required. A T4 has no bf16. Expect to pass the same flag; check that the 4-bit
+  small-model builds start with it, and what the sampler does in fp16.
+- In Colab the vLLM client code needs `nest_asyncio.apply()` because the notebook already runs an event loop.
+- It uses a HuggingFace login for the Gemma weights; ours come from Kaggle (`kaggle models instances
+  versions download`), so the Colab version needs the Kaggle token instead, and the data upload from the
+  laptop (Kaggle returns 429 for a temporary token).
+- It tested `google/gemma-2b` (an older, much smaller model). It says nothing about Gemma 4 4-bit builds
+  or vLLM 0.19.1 on a T4 (compute 7.5): that is the open question.
