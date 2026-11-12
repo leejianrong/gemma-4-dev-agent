@@ -269,7 +269,9 @@ Check these on Kaggle before relying on them:
 | Need | Look at |
 |---|---|
 | Local submission pre-flight (mirrors the limits above) | `scripts/submission.py`, `make check`, `make zip` |
-| The current placeholder agent | `submission/` |
+| The agent we ship (the adopted baseline) and its variants | `submission/`, `experiments/bundles/` (one folder per arm) |
 | Free Kaggle CPU analyses of the data | `pod/explore.py`, `pod/audit.py`, `pod/eda_extract.py`, `make kernel` |
-| Cost-safe GPU pod job template and rehearsal | `pod/job.sh`, `pod/rehearse/`, `make rehearse` |
+| Cost-safe pod job (data upload, env gate, GPU eval) and rehearsal | `pod/job.sh`, `pod/gpu_run.py`, `pod/env_check.py`, `pod/rehearse/`; recipe in `docs/GPU_RUNS.md` |
+| Failure analysis, ablation arms, small-model results | `docs/FAILURE_ANALYSIS.md`, `docs/ABLATION_PLAN.md`, `experiments/runs.csv` |
+| Third-party reference for vLLM on a Colab T4 | `docs/reference/colab/` |
 | Decisions and their reasons | `docs/adr/`, `docs/QUESTIONS.md` |

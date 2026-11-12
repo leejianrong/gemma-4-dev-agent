@@ -1,6 +1,20 @@
 # Ablation plan and dev subset (GEM-12)
 
-Status: plan, 2026-11-09. Nothing in it has been run on agents yet.
+Status: plan from 2026-11-09, updated 2026-11-12 with what has run (table below). Aggregates only.
+
+## What has run (36 dev tasks, resolved per replicate)
+
+| Arm | Model | Resolved | Where | Row in `QUESTIONS.md` |
+|---|---|---|---|---|
+| A0 baseline | 31B | 13, 15 | Kaggle 4 x L4 | A40 |
+| A2 localizer skill | 31B | 14, 14 | Kaggle 4 x L4 | A40 |
+| A4 run-a-test prompt (`tests_v1`) | 31B | 15 (one replicate) | RunPod L40S | A41 |
+| baseline prompt | E4B | 5 (one replicate) | RunPod RTX 2000 Ada | A43 |
+| baseline prompt | E2B | 6 (one replicate) | RunPod RTX 2000 Ada | A43 |
+
+Not yet run: A1, A1b (graph tools), A5 to A7 (prompt bundles), B, C, D. Failure analysis of these runs:
+`docs/FAILURE_ANALYSIS.md` (A42): gold-patch size separates solved from never-solved tasks; only the 8
+flaky tasks leave room for a prompt change to beat noise.
 
 ## Dev subset
 
@@ -13,11 +27,11 @@ regenerate it). The rule:
   (29 of 129 public tasks, A39). The public grading image lacks them, so these tasks carry no signal
   in our runs.
 - A seeded draw per repo: fastapi 30, requests 5, httpx 1. Total 36 tasks.
-- Every arm runs the same 37 tasks, so arms are compared pairwise.
+- Every arm runs the same 36 tasks, so arms are compared pairwise.
 
 Cost: about 5.3 min per task, so about 3.3 h of GPU per arm and replicate.
 
-## What 37 tasks can detect
+## What 36 tasks can detect
 
 From `dashboards/noise.py` (binomial plus a task-mix term): with 3 replicates per arm, a gain of
 about 8 to 9 points is detectable at 5% significance and 80% power. A 5-point gain needs about 8
@@ -54,7 +68,7 @@ min and any workflow agent that adds model calls must be judged against the 12 h
 
 ## Order and rules
 
-1. Run A0 twice more to get our own replicate spread. We only have one run of it.
+1. ~~Run A0 twice more to get our own replicate spread.~~ Done: A0 has two replicates (13, 15), the spread is about 2 tasks.
 2. Screen A1, A2, A3 with 2 replicates. Drop arms that are not above A0 by the spread.
 3. Screen B, C and D arms on the synthetic set once its validity check passes. Until then, run
    only the arms the paper needs.
@@ -64,7 +78,9 @@ min and any workflow agent that adds model calls must be judged against the 12 h
 
 ## Open
 
-- Whether the grader has the same missing-module and `httpbin` gaps as our sandbox. If it does,
-  the 6 requests tasks in the dev subset are risky. A gold-patch run would settle it.
-- Kaggle GPU queue time. If it stays long, move replicate runs to a pod (A100 at about 1.39 USD/h);
-  the eval runner has never run on a pod, so budget one debug run.
+- Whether the grader has the same missing-module and `httpbin` gaps as our sandbox (A39). Kaggle's subprocess
+  image and the official Docker grader may use different package versions (`docs/GPU_RUNS.md`, section 10).
+- GPU access: Kaggle's weekly quota is about 15 h of L4x4, so replicates also run on RunPod (`docs/GPU_RUNS.md`,
+  "How we run a pod today"). A pod's GPU differs from the leaderboard's, and the 8-minute limit is wall-clock time,
+  so compare timeouts across hardware with care.
+- The small-model track (E4B, E2B) is where tuning is cheapest: about 0.5 USD per replicate on a 16 GB card.
