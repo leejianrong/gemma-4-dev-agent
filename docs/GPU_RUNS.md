@@ -377,3 +377,11 @@ real vLLM harness, the uploaded data and the three-control gold-patch gate. [mea
   `GPU_MODEL=<model>` in the pod environment; the model comes from Kaggle (`google/gemma-4/other/<model>/2`).
 - Spend so far: about 8.1 USD of the 10 USD cap (balance 7.02 USD from 15.16). About 1.8 USD is left.
 - RunPod's API sometimes times out for a minute; a watcher must treat a failed pod list as "unknown", not "gone".
+
+## 13. Colab T4 notebook (draft, 2026-11-12)
+
+`experiments/colab/small_model_t4.ipynb` runs the E2B/E4B dev subset on a free Colab T4 through the same
+`pod/gpu_run.py` (environment pins, three-control gold-patch gate, model download, pinned install, vLLM,
+eval), with `ER_VLLM_DTYPE=half`. That variable is new in `pod/eval_runner.py` (`er_dtype`): without it the
+runner refuses GPUs below compute 8.0, as before. The notebook runs a one-task probe first because vLLM
+0.19.1 on a T4 with the 4-bit Gemma 4 builds is untested. Data comes from the user's own Drive.
