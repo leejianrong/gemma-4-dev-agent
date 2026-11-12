@@ -108,7 +108,7 @@ kernel-eval: ## Build the GPU eval-runner kernel. EVAL_TASKS=5|all|id,id EVAL_RU
 run-eval: kernel-eval ## Push the eval runner to Kaggle GPU (uses quota; capped by EVAL_TIMEOUT_S, default 7200)
 	kaggle kernels push -p kaggle/eval_kernel -t $${EVAL_TIMEOUT_S:-7200} --accelerator $${EVAL_MACHINE:-NvidiaL4}
 
-.PHONY: analysis-image analysis-check score-local
+.PHONY: analysis-image analysis-check score-local task-features
 ANALYSIS_IMAGE = gemma-dev-analysis
 # Run a script on the competition data with no network, a read-only root, the data mounted read-only
 # and resource limits. Usage: $(call RUN_ISOLATED,SCRIPT,OUT_DIR)
@@ -119,6 +119,9 @@ docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1g --cap-drop AL
   -v "$(CURDIR)/data/competition:/data:ro" -v "$(CURDIR)/$(1):/job/analysis.py:ro" \
   -v "$(CURDIR)/$(2):/out" $(ANALYSIS_IMAGE) python /job/analysis.py /data /out
 endef
+
+task-features: ## Relate dev-task outcomes to task features (aggregates; FIG_DIR=docs/img adds the figure)
+	uv run --group viz python -m analysis.task_features data
 
 analysis-image: ## Build the analysis container image (needs network once)
 	docker build -t $(ANALYSIS_IMAGE) docker/analysis
