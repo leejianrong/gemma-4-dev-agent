@@ -264,3 +264,8 @@ def test_dtype_follows_the_gpu_unless_overridden():
     assert er.er_dtype(7, False, "half") == "half"  # a Colab T4 run says so explicitly
     with pytest.raises(SystemExit):
         er.er_dtype(7, False, None)
+
+
+def test_tensor_parallel_follows_the_gpu_count_unless_overridden():
+    assert [er.er_tp(n) for n in (1, 2, 3, 4)] == [1, 2, 2, 4]
+    assert er.er_tp(4, 1) == 1  # a small model on Kaggle's four L4s

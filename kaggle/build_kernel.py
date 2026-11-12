@@ -214,6 +214,7 @@ def eval_params(files: dict[str, str]) -> dict:
         "tasks": tasks,
         "model": os.environ.get("EVAL_MODEL", m.group(1) if m else ""),
         "concurrency": int(os.environ.get("EVAL_CONCURRENCY", "1")),
+        "tensor_parallel": int(os.environ.get("EVAL_TP", "0")),  # 0 = by GPU count
         "max_minutes": float(os.environ.get("EVAL_MAX_MIN", "90")),
         "seed": int(os.environ.get("EVAL_SEED", "0")),
         "sandbox": os.environ.get("EVAL_SANDBOX", "subprocess"),

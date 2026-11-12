@@ -401,6 +401,11 @@ def er_eval_limits(root: Path) -> dict:
     }
 
 
+def er_tp(gpus: int, override: int = 0) -> int:
+    """Tensor-parallel size: all of 1, 2 or 4 GPUs unless overridden (a small model may need 1)."""
+    return override or (4 if gpus >= 4 else (2 if gpus >= 2 else 1))
+
+
 def er_dtype(major: int, bf16: bool, override: str | None) -> str:
     """vLLM dtype. ER_VLLM_DTYPE overrides it (a Colab T4 has no bf16 and needs "half"); otherwise
     the competition's L4s (compute 8.x) run bfloat16 and anything older is refused."""
@@ -494,7 +499,7 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
     gpus = torch.cuda.device_count() if torch.cuda.is_available() else 1
     if gpus < 1 or not torch.cuda.is_available():
         raise SystemExit("ERROR no CUDA device visible")
-    tp = 4 if gpus >= 4 else (2 if gpus >= 2 else 1)
+    tp = er_tp(gpus, p.get("tensor_parallel", 0))
     dtype = er_dtype(
         torch.cuda.get_device_capability(0)[0],
         torch.cuda.is_bf16_supported(),
