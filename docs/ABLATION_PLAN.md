@@ -36,6 +36,8 @@ variants cheaply there, run only finalists here.
 | A5 | Counted call plan: first edit by call 5 (`first_edit_v1`) | prompt | GEM-29 |
 | A6 | Concrete edit_file retry steps keyed on the real error text (`edit_retry_v1`) | prompt | GEM-30 |
 | A7 | One-line stated doubt before each tool call (`doubt_v1`) | prompt | GEM-32 |
+| A8 | E2B: 33% shorter prompt, edit copy rule and retry recipe, submit-tool rule, reasoning cap (`e2b_v2`; baseline is `e2b_v1`; six numbered changes in `docs/SMALL_MODEL_FAILURES.md`) | prompt | GEM-36 |
+| A9 | E4B: edit copy rule and retry recipe, no submit on a failing test, spare-call diff check, submit-tool rule (`e4b_v2`; baseline is `e4b_v1`) | prompt | GEM-36 |
 | A2 | Localizer skill, one call returns top 10 | skill | GEM-80, 82 |
 | A3 | A2 plus co-change suggestions | skill | GEM-81 |
 | B1 | Tool-call limit 28 vs 40 | limits | GEM-14 |

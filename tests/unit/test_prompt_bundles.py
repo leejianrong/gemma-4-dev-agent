@@ -29,3 +29,38 @@ def test_bundle_changes_only_the_prompt_and_keeps_its_length(name):
     assert [k for k in base if base[k] != bundle[k]] == ["prompts/system.md"]
     ratio = len(bundle["prompts/system.md"]) / len(base["prompts/system.md"])
     assert 0.9 <= ratio <= 1.1
+
+
+SMALL = {"e4b_v2": "e4b_v1", "e2b_v2": "e2b_v1"}
+
+
+def _prompt(name: str) -> str:
+    return (ROOT / "experiments" / "bundles" / name / "prompts" / "system.md").read_text()
+
+
+@pytest.mark.parametrize("name", SMALL)
+def test_small_model_bundle_passes_the_check_and_keeps_its_model(name):
+    root = ROOT / "experiments" / "bundles" / name
+    assert sub.check(root) == []
+    assert (
+        f"model: gemma-4-{name.split('_')[0]}-it-qat-w4a16-ct" in (root / "agent.yaml").read_text()
+    )
+
+
+@pytest.mark.parametrize("name", SMALL)
+def test_small_model_bundle_differs_from_its_v1_only_in_the_prompt(name):
+    parent, bundle = (_files(ROOT / "experiments" / "bundles" / n) for n in (SMALL[name], name))
+    assert parent.keys() == bundle.keys()
+    assert [k for k in parent if parent[k] != bundle[k]] == ["prompts/system.md"]
+
+
+@pytest.mark.parametrize("name", SMALL)
+def test_small_model_prompt_is_no_longer_than_the_baseline_plus_ten_percent(name):
+    assert len(_prompt(name)) <= 1.1 * len((BASE / "prompts" / "system.md").read_text())
+
+
+@pytest.mark.parametrize("name", SMALL)
+def test_small_model_prompt_has_the_edit_copy_rule_and_the_submit_tool_rule(name):
+    text = _prompt(name)
+    assert "submit_patch" in text and "TOOL" in text
+    assert "character for character" in text and "old_string" in text
