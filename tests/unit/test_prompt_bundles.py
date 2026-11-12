@@ -31,7 +31,7 @@ def test_bundle_changes_only_the_prompt_and_keeps_its_length(name):
     assert 0.9 <= ratio <= 1.1
 
 
-SMALL = {"e4b_v2": "e4b_v1", "e2b_v2": "e2b_v1"}
+SMALL = {"e4b_v2": "e4b_v1", "e2b_v2": "e2b_v1", "e4b_v3": "e4b_v1", "e2b_v3": "e2b_v1"}
 
 
 def _prompt(name: str) -> str:
@@ -60,7 +60,13 @@ def test_small_model_prompt_is_no_longer_than_the_baseline_plus_ten_percent(name
 
 
 @pytest.mark.parametrize("name", SMALL)
-def test_small_model_prompt_has_the_edit_copy_rule_and_the_submit_tool_rule(name):
+def test_small_model_prompt_has_the_edit_rule_and_the_submit_tool_rule(name):
     text = _prompt(name)
-    assert "submit_patch" in text and "TOOL" in text
-    assert "character for character" in text and "old_string" in text
+    assert "submit_patch" in text and "TOOL" in text and "old_string" in text
+
+
+@pytest.mark.parametrize("name", ["e4b_v3", "e2b_v3"])
+def test_v3_edits_by_line_number_after_one_failed_edit_file(name):
+    text = _prompt(name)
+    assert "never call it again" in text and "grep -n" in text
+    assert "lines[A-1:B] =" in text  # the replace-by-line-number recipe
