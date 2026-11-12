@@ -63,3 +63,4 @@ tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions 
 - Decisions a future agent would re-litigate get an ADR in `docs/adr/`.
 - Delete worktrees and merged branches when a task ends; list anything left running in the summary.
 - Update README and this file in the same PR that changes what they describe.
+- A git hook exports `GIT_DIR`: the pre-push hook drops `GIT_*` and `tests/conftest.py` does too, because a test-time `git init` once flipped this repo to `core.bare=true` (run `git config core.bare false` if `git status` says "must be run in a work tree").
