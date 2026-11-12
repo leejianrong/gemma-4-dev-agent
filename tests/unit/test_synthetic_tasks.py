@@ -2,12 +2,13 @@
 
 import csv
 import json
-import subprocess
 import tarfile
 
 from synthetic import mutate
 from synthetic.run_tests import Run, evaluate, failure_reasons
 from synthetic.tasks import (
+    _git,
+    git_env,
     humanize_test,
     issue_problems,
     issue_request,
@@ -133,13 +134,7 @@ def test_new_file_patch_creates_the_file_including_a_missing_final_newline(tmp_p
     for text in ("a = 1\nb = 2\n", "a = 1\nb = 2"):
         out = tmp_path / ("x" if text.endswith("\n") else "y")
         out.mkdir()
-        subprocess.run(
-            ["git", "apply", "-"],
-            cwd=out,
-            input=new_file_patch("t/new.py", text),
-            text=True,
-            check=True,
-        )
+        _git(out, "apply", "-", stdin=new_file_patch("t/new.py", text))
         assert (out / "t" / "new.py").read_text() == text
 
 
@@ -228,3 +223,13 @@ def test_bundle_files_issues_override_and_quality(tmp_path):
         q["tasks"] == 1 and q["gold_nodes_per_task"] == 1 and q["per_repo"] == {"synthetic/toy": 1}
     )
     assert load_issues(None) == {}
+
+
+def test_inherited_git_variables_do_not_redirect_the_snapshot_repo(tmp_path, monkeypatch):
+    """A git hook sets GIT_DIR; the snapshot's init and commit must still run in their own tree."""
+    other = tmp_path / "caller.git"
+    monkeypatch.setenv("GIT_DIR", str(other))
+    monkeypatch.setenv("GIT_INDEX_FILE", str(tmp_path / "caller-index"))
+    assert "GIT_DIR" not in git_env() and git_env()["GIT_AUTHOR_DATE"]
+    sha = write_snapshot(toy_repo(tmp_path), "pkg/core.py", CORE, [], tmp_path / "s.tgz")
+    assert len(sha) == 40 and not other.exists()

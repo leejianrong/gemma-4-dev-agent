@@ -165,11 +165,17 @@ def new_file_patch(path: str, text: str) -> str:
     return f"diff --git a/{path} b/{path}\nnew file mode 100644\n" + "".join(body)
 
 
+def git_env() -> dict:
+    """The environment for git: no inherited GIT_* variables (a git hook sets GIT_DIR, which would
+    point `git init` and `git commit` at the caller's repository), plus our fixed dates."""
+    return {**{k: v for k, v in os.environ.items() if not k.startswith("GIT_")}, **GIT_ENV}
+
+
 def _git(tree: Path, *args: str, stdin: str | None = None) -> str:
     res = subprocess.run(
         [*GIT, *args],
         cwd=tree,
-        env={**os.environ, **GIT_ENV},
+        env=git_env(),
         input=stdin,
         capture_output=True,
         text=True,
