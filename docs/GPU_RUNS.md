@@ -365,3 +365,15 @@ credit in `docs/ATTRIBUTION.md`). What it shows that we need:
   laptop (Kaggle returns 429 for a temporary token).
 - It tested `google/gemma-2b` (an older, much smaller model). It says nothing about Gemma 4 4-bit builds
   or vLLM 0.19.1 on a T4 (compute 7.5): that is the open question.
+
+## 12. Small-model runs on a cheap card (2026-11-12)
+
+Both E4B and E2B ran the 36 dev tasks on one RTX 2000 Ada (16 GB, secure cloud, 0.24 USD/h) with the
+real vLLM harness, the uploaded data and the three-control gold-patch gate. [measured]
+- vLLM starts on 16 GB: 208 s (E4B), 270 s (E2B); GPU memory 14.6 GB of 16.4 GB in use, so there is no spare room.
+- A replicate takes about 2.1 h including start-up and costs about 0.5 USD, against 3.9 USD for 31B.
+  The two replicates together took the balance from 8.14 to 7.02 USD.
+- Launch: `RP_GPU_TYPE="NVIDIA RTX 4000 Ada Generation,NVIDIA RTX 2000 Ada Generation"`, `RP_MAX_HOURLY_USD=0.35`,
+  `GPU_MODEL=<model>` in the pod environment; the model comes from Kaggle (`google/gemma-4/other/<model>/2`).
+- Spend so far: about 8.1 USD of the 10 USD cap (balance 7.02 USD from 15.16). About 1.8 USD is left.
+- RunPod's API sometimes times out for a minute; a watcher must treat a failed pod list as "unknown", not "gone".
