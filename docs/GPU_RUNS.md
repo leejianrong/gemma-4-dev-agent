@@ -429,3 +429,9 @@ real vLLM harness, the uploaded data and the three-control gold-patch gate. [mea
 eval), with `ER_VLLM_DTYPE=half`. That variable is new in `pod/eval_runner.py` (`er_dtype`): without it the
 runner refuses GPUs below compute 8.0, as before. The notebook runs a one-task probe first because vLLM
 0.19.1 on a T4 with the 4-bit Gemma 4 builds is untested. Data comes from the user's own Drive.
+
+## 14. Small-model v2 runs (2026-11-12)
+
+E2B v2 and E4B v2 ran on an RTX 4000 Ada (20 GB, secure on-demand, 0.28 USD/h) with the same harness, data upload and
+gate: 3,929 s and 5,597 s for 36 tasks, about 0.4 and 0.55 USD with the upload wait. Per-job spend so far is about
+9.0 USD of the 10 USD cap, so about 1 USD is left (one more small-model replicate). [estimate]
