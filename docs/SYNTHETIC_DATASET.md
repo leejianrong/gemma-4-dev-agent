@@ -1,6 +1,7 @@
 # Synthetic task set (design, GEM-83)
 
-Status: design only, nothing built. Written 2026-11-09.
+Status: mutation, graphs, embeddings, test runs (2a) and runnable task export (2b) are built; the
+model-written issue text and the validity check are not. Design written 2026-11-09, 2b added 2026-11-12.
 
 ## Why
 
@@ -170,6 +171,55 @@ timeouts.
   Raising the limit from 5 to 10, or choosing the most specific tests, would recover some of them;
   that is a stage 2b choice. The competition sandbox may lack packages the image has (its list is
   not published), so a usable mutant here is not proof that the same suite runs there.
+
+## Stage 2b result (2026-11-12)
+
+`synthetic/tasks.py` turns usable mutants into tasks in the competition's layout, with the tests
+hidden as in the real set. Reproduce a sample (one container at a time, `--network none`):
+`python -m synthetic.fetch CACHE sortedcontainers tomli`, then
+`python -m synthetic.tasks CACHE sortedcontainers tomli --n 10 --seed 0` (`make synthetic-tasks CACHE=... NAMES="..."`).
+Output goes to `data/synthetic/stage2b/` (gitignored): `tasks.jsonl`, `graphs/`, `embeddings/`,
+`snapshots/<id>.tgz`, `gold_nodes.csv` (with `fail_to_pass`), `issue_requests.jsonl`, `report.json`.
+
+| Field | What it holds |
+|---|---|
+| snapshot | the repo at the mutated state as a fresh one-commit git repo (`base_commit` is that commit), without the test files that hold the fail-to-pass tests |
+| `patch` | the gold patch, mutated to original, repo-relative paths |
+| `test_patch` | a new-file patch that puts the removed test files back; the grader applies it, as for real tasks |
+| `problem_statement` | templated bug report: the operator's symptom, one neutral context sentence, the failing test's name and its assertion message or exception type; about 59 words |
+| model-written text | `issue_requests.jsonl` has one prompt per task (`ISSUE_PROMPT`: behaviour, the failing check, no diff, no node name); `--issues FILE` (`{instance_id, problem_statement}` lines) replaces the template |
+
+**Sample: 20 mutants, 2 repos, seed 0** (sortedcontainers, tomli). [measured]
+- 14 tasks (sortedcontainers 5, tomli 9). The other 6: 3 too broad, 2 caught by no test, 1 timeout,
+  the same classes as 2a.
+- **Verified on the exported files** (unpack the snapshot, apply `test_patch`, run the test files:
+  the fail-to-pass tests fail; apply `patch`: they pass): 14 of 14, in Docker, no network.
+- **Time:** 3 min 26 s for the whole sample on one worker, including a 3-run baseline per repo,
+  snapshot, graph, embeddings and the two verification runs: about 11 s per mutant for
+  sortedcontainers and 5 s for tomli. The snapshots take 99 MB for 14 tasks (about 7 MB each).
+- **Quality:** no empty field, no duplicate id or base commit; 14 distinct texts; median 59 words
+  (real: 58). No text holds a gold-patch line, an operator name or a file name. One names the node,
+  as planned for 20% (`--leak 0.2`; 1 of 14 here, small n). Texts that fell back to the bare
+  symptom: 0. A first version had a median of 26 words (7 of 14 under 30); a neutral context
+  sentence and one-word test names fixed it. A leak check caught `is_big` showing as "is big" in a
+  humanised test name; names now compare with underscores and spaces as equal.
+- **Difficulty:** every gold patch changes 2 lines in 1 node (single-site mutations), a median of 2
+  fail-to-pass tests, 279 nodes per graph. Real gold patches are larger (median 5 lines for the tasks
+  every run solves, 22.5 for the ones none solves, `docs/FAILURE_ANALYSIS.md`), so the synthetic set
+  is easier and more local. Multi-site tasks (design: 2 to 3 mutations in neighbouring nodes) are not
+  generated yet.
+- **Known limits:** a fail-to-pass id whose parameters contain " - " is cut by the summary parser
+  (it still matches itself, so verification works). Whole test files are hidden, so passing tests
+  in them are not in the snapshot. A fail-to-pass test outside `tests_dir` is skipped. Not run: the
+  full set (the mutant runs are the 26 hours of stage 2a; about 1,600 snapshots would be about 10 GB).
+
+**Still blocked (needs a model, so GPU):**
+1. Model-written issue texts (E4B on Kaggle or any GPU run) from `issue_requests.jsonl`, then the
+   stage 1 gates on them: BM25 hit@10 within 45 to 65%, name rate near 20%.
+2. The validity check with positive controls where the answer is known: 31B against a small model,
+   and 28 against 10 tool calls. If the synthetic set ranks them the same way as the real set it is
+   worth using for prompt screening; if not, it only serves localization questions.
+3. Multi-site and larger mutations, to close the difficulty gap above.
 
 ## Validity check (does the proxy rank like the real set?)
 

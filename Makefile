@@ -136,3 +136,7 @@ score-local: analysis-image skill-score-pod ## Score the localizer skill on data
 .PHONY: synthetic-image
 synthetic-image: ## Build the synthetic test image (network needed once; test runs use --network none)
 	docker build -t gemma-synthetic-tests docker/synthetic
+
+.PHONY: synthetic-tasks
+synthetic-tasks: ## Build runnable synthetic tasks from CACHE=<fetched repos> NAMES="a b" (one container at a time)
+	uv run python -m synthetic.tasks $(CACHE) $(NAMES) --n $(or $(N),10)

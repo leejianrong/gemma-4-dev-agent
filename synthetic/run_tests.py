@@ -44,6 +44,7 @@ class Run(NamedTuple):
     failed: frozenset  # ids of failed tests and collection errors
     seconds: float
     timed_out: bool
+    reasons: tuple = ()  # (id, short reason) pairs from the same summary lines
 
 
 def parse_pytest(out: str) -> tuple[int, frozenset]:
@@ -57,6 +58,16 @@ def parse_pytest(out: str) -> tuple[int, frozenset]:
         int(n) for n, w in COUNT.findall(out.splitlines()[-1] if out else "") if w == "passed"
     )
     return passed, frozenset(ids)
+
+
+def failure_reasons(out: str) -> dict:
+    """{id: short reason} from the FAILED/ERROR summary lines, split like parse_pytest does."""
+    reasons = {}
+    for line in out.splitlines():
+        if line.startswith(("FAILED ", "ERROR ")):
+            head, _, why = line.split(None, 1)[1].partition(" - ")
+            reasons[head.strip()] = why.strip()
+    return reasons
 
 
 def docker_runner(repo: Path, import_root: str, timeout: int = 240):
@@ -84,6 +95,8 @@ def docker_runner(repo: Path, import_root: str, timeout: int = 240):
                     "HOME=/tmp",
                     "-e",
                     "PYTHONDONTWRITEBYTECODE=1",
+                    "-e",
+                    "COLUMNS=200",  # pytest cuts the summary line at the terminal width
                 ),
                 *("-e", f"MUT_REL={mut[0] if mut else ''}", "-e", f"IMPORT_ROOT={import_root}"),
                 *("-e", f"T={timeout}", "-v", f"{repo}:/repo:ro", "-v", f"{tmp}:/mut:ro"),
@@ -95,7 +108,8 @@ def docker_runner(repo: Path, import_root: str, timeout: int = 240):
             except subprocess.TimeoutExpired:
                 return Run(0, frozenset(), time.time() - t0, True)
         passed, ids = parse_pytest(res.stdout)
-        return Run(passed, ids, time.time() - t0, res.returncode == 124)
+        reasons = tuple(failure_reasons(res.stdout).items())
+        return Run(passed, ids, time.time() - t0, res.returncode == 124, reasons)
 
     return run
 
@@ -136,6 +150,7 @@ def evaluate(
     t0 = time.time()
     targets = files_naming_module(repo, tests_dir, record["module"])
     first = run(mut, targets) if targets else None
+    why: dict = {}
     if first and not first.timed_out and len(set(first.failed) - base_bad) > MAX_KILLERS:
         status, ids = "too_broad", sorted(set(first.failed) - base_bad)
     else:
@@ -144,10 +159,12 @@ def evaluate(
         if not full.timed_out and 0 < len(set(full.failed) - base_bad) <= MAX_KILLERS:
             confirm = run(mut, sorted(set(full.failed) - base_bad))
         status, ids = classify(base_bad, full, confirm)
+        why = dict(full.reasons)
     return {
         "id": record["id"],
         "status": status,
         "fail_to_pass": ids,
+        "reasons": {i: why.get(i, "") for i in ids if i in why},
         "seconds": round(time.time() - t0, 1),
     }
 
