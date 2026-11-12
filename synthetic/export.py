@@ -62,17 +62,39 @@ SYMPTOMS = {
 }
 
 
+def pick(variants: list[str], key: str) -> str:
+    """One of `variants`, chosen by a hash of `key` (the same key always gives the same one)."""
+    return variants[int(_fraction(key) * len(variants))]
+
+
 def _fraction(key: str) -> float:
     return int.from_bytes(hashlib.blake2b(key.encode(), digest_size=4).digest(), "little") / 2**32
 
 
+def names_the_node(record: dict, leak: float) -> bool:
+    """Whether this task's issue text is one of the `leak` share that names the gold node."""
+    return bool(leak) and _fraction("l:" + record["id"]) < leak
+
+
 def problem_statement(record: dict, leak: float = 0.0) -> str:
     """A symptom-only issue text. With `leak` > 0 that share of tasks also names the node."""
-    variants = SYMPTOMS[record["operator"]]
-    text = variants[int(_fraction("v:" + record["id"]) * len(variants))]
-    if leak and _fraction("l:" + record["id"]) < leak:
+    text = pick(SYMPTOMS[record["operator"]], "v:" + record["id"])
+    if names_the_node(record, leak):
         text += f" It seems to be related to `{record['gold_node'].rpartition('.')[2]}`."
     return text
+
+
+def write_graph(out: Path, name: str, base: str, task_files: dict[str, str], include_async=False):
+    """Write one task's graph JSON and embeddings; return (nodes, edges)."""
+    graph = build_graph(task_files, f"{name}@{base[:12]}", include_async=include_async)
+    (out / "graphs" / f"{name}_{base}.json").write_text(
+        json.dumps(graph, separators=(",", ":")), encoding="utf-8"
+    )
+    write_npz(
+        out / "embeddings" / f"{name}_{base}.npz",
+        {n["id"]: embed_text(n["text"]) for n in graph["nodes"]},
+    )
+    return len(graph["nodes"]), len(graph["edges"])
 
 
 def export_bundle(
@@ -95,16 +117,9 @@ def export_bundle(
         iid = f"{repo}_{i:05d}"
         task_files = dict(files)
         task_files[rec["file"]] = rec["mutated_text"]
-        graph = build_graph(task_files, f"{repo}@{base[:12]}", include_async=include_async)
-        n_nodes += len(graph["nodes"])
-        n_edges += len(graph["edges"])
-        (out / "graphs" / f"{repo}_{base}.json").write_text(
-            json.dumps(graph, separators=(",", ":")), encoding="utf-8"
-        )
-        write_npz(
-            out / "embeddings" / f"{repo}_{base}.npz",
-            {n["id"]: embed_text(n["text"]) for n in graph["nodes"]},
-        )
+        nodes, edges = write_graph(out, repo, base, task_files, include_async)
+        n_nodes += nodes
+        n_edges += edges
         rows.append(
             {
                 "instance_id": iid,
