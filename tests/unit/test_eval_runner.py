@@ -256,3 +256,11 @@ def test_wheelhouse_and_model_paths_default_to_kaggle_mounts_and_can_be_moved(mo
     monkeypatch.delenv("ER_WHEELHOUSE_DIR")
     monkeypatch.delenv("ER_MODEL_ROOT_DIR")
     assert str(_runner_paths(monkeypatch)[1]).startswith("/kaggle/")  # leave the module as found
+
+
+def test_dtype_follows_the_gpu_unless_overridden():
+    assert er.er_dtype(8, True, None) == "bfloat16"
+    assert er.er_dtype(8, False, None) == "auto"
+    assert er.er_dtype(7, False, "half") == "half"  # a Colab T4 run says so explicitly
+    with pytest.raises(SystemExit):
+        er.er_dtype(7, False, None)

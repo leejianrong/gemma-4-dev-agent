@@ -401,6 +401,19 @@ def er_eval_limits(root: Path) -> dict:
     }
 
 
+def er_dtype(major: int, bf16: bool, override: str | None) -> str:
+    """vLLM dtype. ER_VLLM_DTYPE overrides it (a Colab T4 has no bf16 and needs "half"); otherwise
+    the competition's L4s (compute 8.x) run bfloat16 and anything older is refused."""
+    if override:
+        return override
+    if major < 8:
+        raise SystemExit(
+            f"ERROR GPU compute capability {major}.x cannot run bfloat16 (competition: 4 x L4): "
+            "request the NvidiaL4 machine shape, or set ER_VLLM_DTYPE=half for an experiment"
+        )
+    return "bfloat16" if bf16 else "auto"
+
+
 def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict:
     """The whole run. Returns the report; raises on a failure that should fail the kernel."""
     t0 = time.time()
@@ -482,12 +495,11 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
     if gpus < 1 or not torch.cuda.is_available():
         raise SystemExit("ERROR no CUDA device visible")
     tp = 4 if gpus >= 4 else (2 if gpus >= 2 else 1)
-    major = torch.cuda.get_device_capability(0)[0]
-    if major < 8:
-        raise SystemExit(
-            f"ERROR GPU compute capability {major}.x cannot run bfloat16 (competition: 4 x L4): "
-            "request the NvidiaL4 machine shape"
-        )
+    dtype = er_dtype(
+        torch.cuda.get_device_capability(0)[0],
+        torch.cuda.is_bf16_supported(),
+        os.environ.get("ER_VLLM_DTYPE"),
+    )
     er_log(f"STAGE start-vllm (t+{time.time() - t0:.0f}s) gpus={gpus} tp={tp} model={model}")
     extra = (
         ("--hf-overrides", '{"architectures": ["Gemma4ForCausalLM"], "model_type": "gemma4"}')
@@ -501,7 +513,7 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
         tool_call_parser="gemma4",
         reasoning_parser="gemma4",
         max_model_len=32768,
-        dtype="bfloat16" if torch.cuda.is_bf16_supported() else "auto",
+        dtype=dtype,
         gpu_memory_utilization=0.90,
         enable_auto_tool_choice=True,
         enable_lora=bool(adapter_map),
