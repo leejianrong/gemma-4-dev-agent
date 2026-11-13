@@ -9,6 +9,7 @@ and several results are search snippets or aggregator pages. Check a number agai
 | [literature.md](literature.md) | What the sources say, by direction, with links and how far to trust each |
 | [tasks.md](tasks.md) | Candidate tasks from the directions, ordered, with cost, GPU need and success test |
 | [trace-analyses.md](trace-analyses.md) | Spec for the zero-GPU trace analyses (task T1) |
+| [trace-findings.md](trace-findings.md) | Results of T1 on the four 31B dev runs |
 
 ## Where we stood when this was written
 
