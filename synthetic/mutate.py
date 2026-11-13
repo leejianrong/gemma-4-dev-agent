@@ -285,12 +285,16 @@ def find_candidates(
     return found
 
 
-def apply_candidate(source: str, cand: Candidate) -> str:
-    """The source with the candidate's edits applied (byte offsets, so non-ASCII text is safe)."""
+def apply_edits(source: str, edits) -> str:
+    """The source with (start, end, replacement) byte-offset edits applied (safe for non-ASCII)."""
     src = source.encode("utf-8")
-    for s, e, new in sorted(cand.edits, reverse=True):
+    for s, e, new in sorted(edits, reverse=True):
         src = src[:s] + new + src[e:]
     return src.decode("utf-8")
+
+
+def apply_candidate(source: str, cand: Candidate) -> str:
+    return apply_edits(source, cand.edits)
 
 
 def reverse_patch(original: str, mutated: str, path: str) -> str:
@@ -358,6 +362,106 @@ def _record(source, dump, defs, cand: Candidate, repo: str, commit: str) -> dict
         "mutated_text": mutated,
         "gold_patch": reverse_patch(source, mutated, cand.path),
     }
+
+
+def multi_mutations_for_source(
+    source: str,
+    path: str,
+    module: str,
+    k: int = 2,
+    n: int = 1,
+    seed: int = 0,
+    include_async: bool = True,
+    repo: str = "repo",
+    commit: str = PLACEHOLDER,
+) -> list[dict]:
+    """Up to n records that each inject k bugs into k different graph nodes of one file.
+
+    The gold patch then has several hunks and the gold set several nodes, closer to the real tasks
+    (docs/SYNTHETIC_DATASET.md, multi-site). The record also carries the fields of a single
+    mutant (`gold_node` is the first node in source order), plus `operators`, `gold_nodes`, `sites`.
+    """
+    cands = find_candidates(source, path, module, include_async)
+    if not cands:
+        return []
+    tree = ast.parse(source)
+    defs = collect_defs(tree)
+    kinds = {x.qual: x.kind for x in defs}
+    dump = ast.dump(tree)
+    groups: dict[str, list[Candidate]] = {}
+    for c in cands:
+        qual, _ = resolve_node(innermost(defs, c.line).qual, kinds)
+        groups.setdefault(qual, []).append(c)
+    if len(groups) < k:
+        return []
+    rng = random.Random(seed)
+    quals = sorted(groups)
+    out: list[dict] = []
+    seen: set[tuple] = set()
+    for _ in range(n * 20):
+        if len(out) >= n:
+            break
+        chosen = sorted(
+            (rng.choice(groups[q]) for q in rng.sample(quals, k)), key=lambda c: c.offset
+        )
+        key = tuple((c.operator, c.offset) for c in chosen)
+        spans = sorted((s, e) for c in chosen for s, e, _ in c.edits)
+        if key in seen or any(a[1] > b[0] for a, b in zip(spans, spans[1:], strict=False)):
+            continue
+        seen.add(key)
+        mutated = apply_edits(source, [e for c in chosen for e in c.edits])
+        if not is_valid_mutant(dump, mutated, source):
+            continue
+        nodes, fell = [], False
+        for c in chosen:
+            qual, f = resolve_node(innermost(defs, c.line).qual, kinds)
+            nodes.append(f"{module}.{qual}")
+            fell = fell or f
+        first = chosen[0]
+        out.append(
+            {
+                "id": f"{repo}__{module}__{'_'.join(str(c.offset) for c in chosen)}__multi",
+                "repo": repo,
+                "commit": commit,
+                "file": path,
+                "module": module,
+                "operator": "multi",
+                "operators": [c.operator for c in chosen],
+                "sites": k,
+                "line": first.line,
+                "innermost": innermost(defs, first.line).qual,
+                "gold_node": nodes[0],
+                "gold_nodes": nodes,
+                "gold_kind": kinds[resolve_node(innermost(defs, first.line).qual, kinds)[0]],
+                "fell_back": fell,
+                "mutated_text": mutated,
+                "gold_patch": reverse_patch(source, mutated, path),
+            }
+        )
+    return out
+
+
+def generate_multi(
+    root: Path,
+    n: int = 10,
+    k: int = 2,
+    seed: int = 0,
+    include_async: bool = True,
+    repo: str | None = None,
+    commit: str = PLACEHOLDER,
+) -> list[dict]:
+    """Up to n multi-site mutants drawn at random (seeded) over the files of a tree."""
+    root = Path(root)
+    repo = repo or root.resolve().name
+    pool: list[dict] = []
+    for p in source_files(root):
+        rel = p.relative_to(root).as_posix()
+        text = p.read_text(encoding="utf-8", errors="replace")
+        pool += multi_mutations_for_source(
+            text, rel, module_name(rel), k, 3, seed, include_async, repo, commit
+        )
+    random.Random(seed).shuffle(pool)
+    return pool[:n]
 
 
 def _tree_candidates(root: Path, include_async: bool, include_tests: bool):
