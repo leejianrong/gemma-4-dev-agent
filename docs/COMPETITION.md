@@ -258,6 +258,9 @@ Check these on Kaggle before relying on them:
   the public notebook, runs.csv). Not allowed: gold_nodes.csv, gold_hunks.csv, per-task traces, patches, issue text, or any
   Kaggle dataset of these. To release them, ask the host on the competition forum and keep the reply here. The paper-track
   rules may differ; they were not read.
+- **LoRA adapters trained on task data (decided 2026-11-13, reply pending).** We treat adapters shipped privately inside
+  `submission.zip` as allowed (4a, and the rules accept adapters). Conditions: never publish adapter weights, and post a forum
+  question to the host before the final submission (2026-12-02). Host reply: _not yet asked_. Record it here.
 - **Scoring-time concurrency** for tasks is unknown, so "about 6 minutes per task" (12 h ÷ ~120
   tasks, if serial) is a floor, not a plan.
 - **Third-party scores** (about 0.17 to 0.18 for budget-aware bundles, claims up to 0.24) come from
