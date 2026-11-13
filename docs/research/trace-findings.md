@@ -15,20 +15,21 @@ resolution (A40), so pooling the runs is reasonable for behaviour questions.
 - Next if we want an answer: a probe on the pod with a small model that logs the raw completion before and after the first tool result
   (needs GPU time, about 0.1 USD). Low priority until a symptom shows up.
 
-## Q2. After a refused edit (31B): it rarely retries blindly
+## Q2. After a refused edit (31B): it re-reads the file
 
-45 refused `edit_file` calls over the four runs (6 to 16 per run). The next call was:
+Correction (2026-11-13): the first version of this section counted 45 refusals, but 23 of those were "Tool call budget exhausted"
+errors, not edit failures. `edit_followups` now skips them. Real refusals: 22 of 474 `edit_file` calls (4.6%; A44 says about 6%).
+Kinds: old_string not found 18, string occurs several times 3, no changes 1. The next call after a refusal:
 
 | Next call | Count | Share |
 |---|---|---|
-| Re-read the same file | 14 | 31% |
-| `edit_file` on the same path again | 5 | 11% |
-| Something else (test, search, other file) | 25 | 56% |
-| Nothing (refusal was the last call) | 1 | 2% |
+| Re-read the same file | 14 | 64% |
+| `edit_file` on the same path again | 5 | 23% |
+| Something else | 2 | 9% |
+| Nothing (refusal was the last call) | 1 | 5% |
 
-So 31B mostly moves on rather than loops. The "something else" bucket is the big one and is not broken down yet (does the edit ever
-land later? Is it a different edit?). E4B/E2B have no traces here, so the same split for them needs the v3 run (T4), where we should
-capture traces, not only the console log.
+So 31B recovers the way a person would: look at the file, then try again. Multi-line `old_string` fails more often: 15 of 22
+refused edits were multi-line (68%) against 189 of 429 accepted ones (44%). n = 22, a lead only. E4B/E2B have no traces here.
 
 ## Q3. Timing: edit early, but calls are not the lever
 

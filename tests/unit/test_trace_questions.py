@@ -50,3 +50,14 @@ def test_summarize_runs_splits_resolved_from_unresolved_and_reports_only_aggrega
     assert out["resolved"]["median_first_edit_call"] == 4
     assert out["all"]["msg_median_by_call"][0] == 400
     assert "instance" not in str(out)
+
+
+def test_edit_followups_ignore_edits_refused_only_because_the_budget_ran_out():
+    t = {
+        "steps": [
+            step("edit_file", {"filepath": "a.py"}, status="error", etype="BudgetExceeded"),
+            step("edit_file", {"filepath": "a.py"}, status="error", etype="FileEditError"),
+        ]
+    }
+    out = edit_followups(t)
+    assert out["refused"] == 1 and out["last"] == 1

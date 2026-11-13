@@ -26,11 +26,16 @@ def message_lengths(trace: dict) -> list[int]:
 
 
 def edit_followups(trace: dict) -> dict:
-    """For each refused edit_file, the next call: same-path edit, same-path read, other, or none."""
+    """For each refused edit_file, the next call: same-path edit, same-path read, other, or none.
+
+    Edits refused only because the call budget ran out are not edit failures and are skipped.
+    """
     cs = calls(trace)
     out = {"refused": 0, "retry_edit": 0, "reread": 0, "other": 0, "last": 0}
     for i, c in enumerate(cs):
         if c["tool"] != "edit_file" or c["status"] != "error":
+            continue
+        if c["error_type"] == "BudgetExceeded":
             continue
         out["refused"] += 1
         if i + 1 == len(cs):
