@@ -36,6 +36,23 @@ still be the useful claim: a small edit-refusal gain, not a resolution gain.
 Total about 1 USD against about 1.8 USD left (check `runpodctl user` for the real balance before stage 0).
 Stages 0 and 1 are the only ones worth starting without a go on the whole thing.
 
+## Stage 1 result (2026-11-13, laptop, aggregates only)
+
+**Held-out repos, written before any training data is built: `Textualize/rich`, `psf/requests`, `encode/httpx`.**
+Train, if ever, on `fastapi/fastapi` only. Judge on the held-out repos (rich 48 tasks, requests 13, httpx 1).
+
+Resolved 31B task-runs (dev-a0/a2, r1 and r2, 144 runs): fastapi 52 resolved over 16 distinct tasks;
+requests 4 over 1 task; httpx 0. Rich has no 31B traces at all. After the repo split the training set is
+**52 runs over 16 fastapi tasks**, and the earlier count says 12 of those tasks are always solved (easy,
+median gold patch 5 lines). Dev scoring on fastapi would be memorisation, so the only fair eval is the
+held-out repos, where E4B has no baseline on rich yet (an extra run, not in the budget above).
+
+**Verdict: the set does not justify the stage 0 pod test.** 16 tasks of one repo, mostly tasks the base
+model already solves, is below the 491-trajectory floor of the published fine-tunes (lora-feasibility.md)
+by a factor of 30 or more, and the held-out eval needs a rich baseline we have not paid for. Stage 0
+(about 0.15 USD) answers a mechanics question only; run it when the data side changes (T11 multi-site
+synthetic tasks run through E4B or 31B, or budget beyond the cap), not before.
+
 ## What counts as a result
 
 Resolution cannot show a difference here (noise 8 to 11 points; a LoRA gain of a few tasks is inside it).
