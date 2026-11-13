@@ -10,6 +10,9 @@ and several results are search snippets or aggregator pages. Check a number agai
 | [tasks.md](tasks.md) | Candidate tasks from the directions, ordered, with cost, GPU need and success test |
 | [trace-analyses.md](trace-analyses.md) | Spec for the zero-GPU trace analyses (task T1) |
 | [trace-findings.md](trace-findings.md) | Results of T1 on the four 31B dev runs |
+| [papers.md](papers.md) | T7: five sources read in full (setup, result, applicability) |
+| [edits-and-proxy.md](edits-and-proxy.md) | T3 edit-failure reasons, T9 E4B-as-proxy verdict |
+| [lora-feasibility.md](lora-feasibility.md) | T10: LoRA on our own traces, no-go for now |
 
 ## Where we stood when this was written
 

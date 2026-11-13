@@ -8,14 +8,14 @@ Trust levels: **paper** = peer-reviewed or arXiv, seen as a snippet; **blog** = 
 | Claim | Source | Trust |
 |---|---|---|
 | 77% of `str_replace` failures: the text to replace is not in the file; tab and punctuation drift are common causes | [Hashline vs replace](https://dev.to/nwyin/hashline-vs-replace-does-the-edit-format-matter-15n2), [The harness problem](https://blog.can.ac/2026/02/12/the-harness-problem) | blog |
-| A Feb 2026 test of 16 models over patch, `str_replace` and hashline (line-anchored) formats: the weakest models gained most | same | blog, "not rigorous" by one author |
+| A Feb 2026 test of 16 models over patch, `str_replace` and hashline (line-anchored) formats. A search snippet said the weakest models gained most; the page itself says otherwise: gains over replace run from -8.3 to +11.3 points, GLM-4.5 Air +0.4, Qwen Turbo -1.7, and its table headers are garbled (see [papers.md](papers.md)) | same | blog, vendor-written; snippet claim corrected |
 | Normalising edit output cut agentic edit failures by 38% | [Sweep](https://blog.sweep.dev/posts/jetbrains-coding-agent) | blog |
 | Model gap dwarfs format gap in a 20-task comparison; failures were hallucinated content and line numbers left in `old_string` | [agentpatterns](https://www.agentpatterns.ai/tool-engineering/llm-edit-format-selection/) | blog |
 | Search-replace beats unified diff for large models; small open models gain almost nothing from any format (Diff-XYZ, as reported) | same | secondhand |
 | No source tests line-number edits against `str_replace` on small models directly | (search gap) | |
 
 Reading for us: A44 matches the first row (old_string not found is about half of E2B's edit calls). The v3 line-number
-edit is the cited fix, but the counterpoint says a format change may do little. We need our own run to know.
+edit is the cited fix, but the primary text shows about zero gain over `str_replace` for weak models and the counterpoint found none. We need our own run to know.
 Notice the counterpoint's failure mode: line numbers copied into `old_string`. Check v3 traces for the mirror image
 (wrong line numbers).
 
@@ -41,6 +41,7 @@ if present, shape the prompt around it. Not yet looked at.
 | Training-free best-of-N with an LLM verifier; reported 78.2% on SWE-bench Verified, but over frontier models, not small ones | [LLM-as-a-Verifier](https://arxiv.org/html/2607.05391v2) | paper |
 | Verify only selected steps (under 4%); 75.47 to 77.20% at 1.09x cost on a frontier model | [SWE-Verifier](https://arxiv.org/html/2610.30284) | paper |
 | Open-source verifiers leave a gap to oracle selection | [SWE-ZERO to SWE-HERO](https://arxiv.org/pdf/2604.01496) | paper |
+| Read in full (papers.md): both verifier papers need extra samples, logprobs or a trained 4B verifier; SWE-Verifier's +1.73 points is inside its own standard deviation | | notes |
 | Best results with test-time scaling lean on a trained testing agent / pre-trained model | [R2E-Gym](https://arxiv.org/pdf/2504.07164), [Satori-SWE](https://arxiv.org/html/2505.23604v1) | paper |
 | Dynamic turn limits beat fixed limits at equal or lower cost | [More with Less](https://arxiv.org/html/2510.16786v2) | paper |
 | Early termination cuts cost 19 to 55% (mean 32%), loss "negligible" (unverified) | [EET](https://www.alphaxiv.org/abs/2601.05777.md) | paper, snippet |
