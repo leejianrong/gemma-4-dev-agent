@@ -78,7 +78,8 @@ def names_the_node(record: dict, leak: float) -> bool:
 
 def problem_statement(record: dict, leak: float = 0.0) -> str:
     """A symptom-only issue text. With `leak` > 0 that share of tasks also names the node."""
-    text = pick(SYMPTOMS[record["operator"]], "v:" + record["id"])
+    op = record["operators"][0] if record["operator"] == "multi" else record["operator"]
+    text = pick(SYMPTOMS[op], "v:" + record["id"])
     if names_the_node(record, leak):
         text += f" It seems to be related to `{record['gold_node'].rpartition('.')[2]}`."
     return text

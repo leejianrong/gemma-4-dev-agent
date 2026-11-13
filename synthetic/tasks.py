@@ -64,6 +64,7 @@ GIT_ENV = {
 GIT = ["git", "-c", "user.name=synthetic", "-c", "user.email=synthetic@example.invalid"]
 GIT += ["-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false"]
 GOLD_FIELDS = ["instance_id", "gold_node", "gold_kind", "fell_back", "operator", "file"]
+GOLD_EXTRA = ["sites", "gold_nodes", "fail_to_pass"]
 WORDS = (30, 100)
 
 
@@ -266,9 +267,11 @@ def load_issues(path: Path | None) -> dict:
     return {r["instance_id"]: r["problem_statement"] for r in rows}
 
 
-def run_repo(entry: dict, cache: Path, n: int, seed: int, out: Path, leak: float, check: bool):
+def run_repo(
+    entry: dict, cache: Path, n: int, seed: int, out: Path, leak: float, check: bool, sites: int = 1
+):
     repo = cache / entry["name"]
-    root, recs = sample_mutants(repo, entry, n, seed)
+    root, recs = sample_mutants(repo, entry, n, seed, sites)
     tests = entry["tests_dir"]
     run = docker_runner(repo, root)
     base = baseline(run, tests)
@@ -342,7 +345,14 @@ def quality(built: list, leak: float) -> dict:
             "median": statistics.median(changed) if changed else 0,
             "max": max(changed, default=0),
         },
-        "gold_nodes_per_task": 1,  # multi-site tasks are not generated yet
+        "gold_nodes_per_task": statistics.median(
+            len(set(m["rec"].get("gold_nodes", [m["rec"]["gold_node"]]))) for m in metas
+        )
+        if metas
+        else 0,
+        "sites_per_task": statistics.median(m["rec"].get("sites", 1) for m in metas)
+        if metas
+        else 0,
         "fail_to_pass_median": statistics.median(len(m["f2p"]) for m in metas) if metas else 0,
         "verified": sum(bool(m.get("fails_before") and m.get("passes_after")) for m in metas),
         "verify_failed": sum(
@@ -359,13 +369,15 @@ def write_bundle(built: list, out: Path, issues: dict) -> None:
         rows.append(task)
     (out / "tasks.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     with open(out / "gold_nodes.csv", "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, [*GOLD_FIELDS, "fail_to_pass"])
+        w = csv.DictWriter(fh, [*GOLD_FIELDS, *GOLD_EXTRA])
         w.writeheader()
         for task, m in built:
             w.writerow(
                 {
                     **{k: m["rec"][k] for k in GOLD_FIELDS if k != "instance_id"},
                     "instance_id": task["instance_id"],
+                    "sites": m["rec"].get("sites", 1),
+                    "gold_nodes": ";".join(m["rec"].get("gold_nodes", [m["rec"]["gold_node"]])),
                     "fail_to_pass": ";".join(m["f2p"]),
                 }
             )
@@ -381,6 +393,9 @@ def main(argv: list[str]) -> int:
     ap.add_argument("names", nargs="*")
     ap.add_argument("--n", type=int, default=10, help="mutants per repo")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument(
+        "--sites", type=int, default=1, help="bugs per task, in different nodes of one file"
+    )
     ap.add_argument("--leak", type=float, default=0.2, help="share of issues that name the node")
     ap.add_argument("--issues", type=Path, help="JSONL {instance_id, problem_statement}")
     ap.add_argument("--no-verify", action="store_true")
@@ -395,7 +410,9 @@ def main(argv: list[str]) -> int:
     ]
     built, summaries = [], []
     for e in entries:  # one repo, one container at a time
-        got, summary = run_repo(e, a.cache.resolve(), a.n, a.seed, a.out, a.leak, not a.no_verify)
+        got, summary = run_repo(
+            e, a.cache.resolve(), a.n, a.seed, a.out, a.leak, not a.no_verify, a.sites
+        )
         built += got
         summaries.append(summary)
         print(json.dumps(summary), flush=True)

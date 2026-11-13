@@ -71,3 +71,15 @@ def test_evaluate_skips_the_full_run_when_the_targeted_run_is_too_broad(tmp_path
     runner, calls = fake([run(*"abcdef")])
     row = evaluate(REC, runner, "src", "tests", tmp_path, set())
     assert row["status"] == "too_broad" and len(calls) == 1
+
+
+def test_a_multi_site_mutant_may_fail_up_to_ten_tests_and_a_single_one_only_five(tmp_path):
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_one.py").write_text("import pkg.core\n")
+    ids = [f"t{i}" for i in range(8)]
+    runner, _ = fake([run(*ids), run(*ids), run(*ids)])
+    row = evaluate({**REC, "operator": "multi"}, runner, "src", "tests", tmp_path, set())
+    assert row["status"] == "usable" and len(row["fail_to_pass"]) == 8
+    runner, _ = fake([run(*ids)])
+    row = evaluate({**REC, "operator": "cmp_swap"}, runner, "src", "tests", tmp_path, set())
+    assert row["status"] == "too_broad"

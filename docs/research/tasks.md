@@ -15,13 +15,13 @@ Ordered by value for cost. GPU column: none / pod (about 0.5 USD per small-model
 | T8 | Read the Kaggle Discussion and Code tabs (needs login) | 5 | none | List of public tricks tried by others, marked tried or untried by us |
 | T9 | Proxy check: do E4B prompt changes move the same log signals as 31B? Compare signals available in both | 5 | none (uses T1) | **Done**: E4B differs from 31B on every shared signal; a proxy for E4B only ([edits-and-proxy.md](edits-and-proxy.md)) |
 | T10 | LoRA feasibility note: trajectory counts we can get, where they may live (rules 4b), cost on a pod | 4 | none | **Done: no-go for now** ([lora-feasibility.md](lora-feasibility.md)); 56 resolved runs over 17 tasks, terms question open |
-| T11 | Make synthetic tasks harder (multi-line, multi-node patches) | 4, 5 | none | Mutants with gold patches median 10+ lines that still verify (A45 method) |
+| T11 | Make synthetic tasks harder (multi-line, multi-node patches) | 4, 5 | none | **Done in part (A48)**: same-file multi-site, 6 lines at 3 sites and 10 at 5, all verified. Not reached: 22.5-line bin, cross-file sites |
 | T13 | Prompt A/B that moves the first edit earlier (31B) | 3 | Kaggle or pod L40S | Log signal median first-edit call drops by 3 or more from the baseline 11 to 14; edit refusals and timeouts not worse; resolution a side note. Needs a within-task look first (trace-findings Q3 has n=5) |
 | T12 | Kaggle runs when quota returns: 31B arm for whichever of T3, T6 survives | all | Kaggle | Two replicates plus a log signal |
 
 ## Suggested order
 
-T1, T6, T7, T9, T10 are done, T2 inconclusive, T3 partly. T13 next (needs a GPU), T11 (harder synthetic tasks) is the remaining no-GPU task, then T7 in parallel as reading. T4 only after T3 says edit formats are still the
+T1, T6, T7, T9, T10 are done, T2 inconclusive, T3 partly. T13 next (needs a GPU), T11 is done in part (A48). The remaining no-GPU task is T8, which needs your Kaggle login, then T7 in parallel as reading. T4 only after T3 says edit formats are still the
 live problem. T8 needs the owner's login. T10 and T11 wait: nothing above supports training yet.
 
 ## Constraints that bind every task

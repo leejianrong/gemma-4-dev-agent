@@ -25,10 +25,11 @@ from pathlib import Path
 from typing import NamedTuple
 
 from synthetic.fetch import load_manifest
-from synthetic.mutate import generate
+from synthetic.mutate import generate, generate_multi
 
 IMAGE = "gemma-synthetic-tests"
 MAX_KILLERS = 5
+MAX_KILLERS_MULTI = 10  # a bug in several nodes breaks more tests
 SCRIPT = (
     "set -e; mkdir -p /scratch/repo;"
     " tar --exclude=.git -C /repo -cf - . | tar -C /scratch/repo -xf -;"
@@ -114,14 +115,16 @@ def docker_runner(repo: Path, import_root: str, timeout: int = 240):
     return run
 
 
-def classify(base_bad: set, mut: Run, confirm: Run | None) -> tuple[str, list[str]]:
+def classify(
+    base_bad: set, mut: Run, confirm: Run | None, limit: int = MAX_KILLERS
+) -> tuple[str, list[str]]:
     """Status and fail-to-pass ids of a mutant. base_bad = tests failing in any unmutated run."""
     if mut.timed_out:
         return "timeout", []
     killers = sorted(set(mut.failed) - base_bad)
     if not killers:
         return "equivalent", []
-    if len(killers) > MAX_KILLERS:
+    if len(killers) > limit:
         return "too_broad", killers
     if confirm is None or sorted(set(confirm.failed) - base_bad) != killers:
         return "flaky", killers
@@ -147,18 +150,19 @@ def evaluate(
 ) -> dict:
     """Run one mutant: targeted tests first (stop if too many fail), then the full suite."""
     mut = ((Path(import_root) / record["file"]).as_posix(), record["mutated_text"])
+    limit = MAX_KILLERS_MULTI if record.get("operator") == "multi" else MAX_KILLERS
     t0 = time.time()
     targets = files_naming_module(repo, tests_dir, record["module"])
     first = run(mut, targets) if targets else None
     why: dict = {}
-    if first and not first.timed_out and len(set(first.failed) - base_bad) > MAX_KILLERS:
+    if first and not first.timed_out and len(set(first.failed) - base_bad) > limit:
         status, ids = "too_broad", sorted(set(first.failed) - base_bad)
     else:
         full = run(mut, [tests_dir])
         confirm = None
-        if not full.timed_out and 0 < len(set(full.failed) - base_bad) <= MAX_KILLERS:
+        if not full.timed_out and 0 < len(set(full.failed) - base_bad) <= limit:
             confirm = run(mut, sorted(set(full.failed) - base_bad))
-        status, ids = classify(base_bad, full, confirm)
+        status, ids = classify(base_bad, full, confirm, limit)
         why = dict(full.reasons)
     return {
         "id": record["id"],
@@ -185,10 +189,16 @@ def baseline(run, tests_dir: str, reps: int = 3) -> dict:
     }
 
 
-def sample_mutants(repo: Path, entry: dict, n: int, seed: int) -> tuple[str, list[dict]]:
+def sample_mutants(
+    repo: Path, entry: dict, n: int, seed: int, sites: int = 1
+) -> tuple[str, list[dict]]:
+    """Mutants of the package; sites > 1 gives that many bugs in different nodes of one file."""
     pkg = Path(entry["package_dir"])
     root = str(pkg.parent)
-    recs = generate(repo / root, n=0, seed=seed, repo=entry["name"])
+    if sites > 1:
+        recs = generate_multi(repo / root, n=n * 5, k=sites, seed=seed, repo=entry["name"])
+    else:
+        recs = generate(repo / root, n=0, seed=seed, repo=entry["name"])
     return root, [r for r in recs if r["file"].startswith(pkg.name + "/")][:n]
 
 

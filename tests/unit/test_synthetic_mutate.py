@@ -220,3 +220,44 @@ def test_methods_of_lowercase_classes_still_have_nodes():
     assert recs and recs[0]["gold_node"] == "a.curry.call" and recs[0]["fell_back"] is False
     ids = {n["id"] for n in m.list_nodes_in_source(src, "a")}
     assert ids == {"a.curry", "a.curry.call"}
+
+
+def multi(k=2, n=5, seed=0, src=SRC):
+    return m.multi_mutations_for_source(src, "pkg/mod.py", "pkg.mod", k=k, n=n, seed=seed)
+
+
+def changed_lines(patch):
+    return sum(1 for ln in patch.splitlines() if ln[:1] in "+-" and ln[:3] not in ("+++", "---"))
+
+
+def test_multi_records_hold_k_bugs_in_k_different_nodes_of_one_file():
+    recs = multi(k=3)
+    assert recs
+    for r in recs:
+        assert r["operator"] == "multi" and len(r["operators"]) == 3
+        assert len(set(r["gold_nodes"])) == 3 and r["gold_node"] == r["gold_nodes"][0]
+        assert r["file"] == "pkg/mod.py" and r["sites"] == 3
+        ast.parse(r["mutated_text"])
+        assert r["mutated_text"] != SRC
+        assert changed_lines(r["gold_patch"]) >= 6  # at least one removed and one added line each
+
+
+def test_multi_gold_patch_restores_the_original_file(tmp_path):
+    r = multi(k=2)[0]
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "mod.py").write_text(r["mutated_text"])
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "gold.patch").write_text(r["gold_patch"])
+    subprocess.run(["git", "apply", "gold.patch"], cwd=tmp_path, check=True)
+    assert (tmp_path / "pkg" / "mod.py").read_text() == SRC
+
+
+def test_multi_is_deterministic_and_respects_n():
+    assert multi(seed=1) == multi(seed=1)
+    assert len(multi(n=2)) <= 2
+    assert [r["id"] for r in multi(seed=1)] != [r["id"] for r in multi(seed=2)] or len(multi()) <= 2
+
+
+def test_multi_needs_k_different_nodes_and_returns_nothing_otherwise():
+    one_node = "def f(a, b):\n    if a < b:\n        return a\n    return b\n"
+    assert multi(k=2, src=one_node) == []

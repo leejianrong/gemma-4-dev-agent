@@ -233,3 +233,31 @@ def test_inherited_git_variables_do_not_redirect_the_snapshot_repo(tmp_path, mon
     assert "GIT_DIR" not in git_env() and git_env()["GIT_AUTHOR_DATE"]
     sha = write_snapshot(toy_repo(tmp_path), "pkg/core.py", CORE, [], tmp_path / "s.tgz")
     assert len(sha) == 40 and not other.exists()
+
+
+CORE2 = (
+    "def is_big(x):\n    if x > 10:\n        return True\n    return False\n\n\n"
+    "def is_small(x):\n    if x < 3:\n        return True\n    return False\n"
+)
+
+
+def a_multi_record(repo):
+    (repo / "pkg" / "core.py").write_text(CORE2)
+    return mutate.generate_multi(repo, n=1, k=2, seed=0, repo="toy", commit="abc")[0]
+
+
+def test_a_multi_site_task_exports_a_multi_hunk_patch_and_every_gold_node(tmp_path):
+    repo, out = toy_repo(tmp_path), tmp_path / "out"
+    for sub in ("graphs", "embeddings", "snapshots"):
+        (out / sub).mkdir(parents=True)
+    rec = a_multi_record(repo)
+    row = {"fail_to_pass": [F2P], "reasons": {F2P: "assert False == True"}}
+    made, why = make_task(rec, row, repo, ".", "tests", "toy", 0, out, {}, 0.0, None)
+    task, meta = made
+    assert why == "" and task["patch"].count("\n@@") + task["patch"].startswith("@@") >= 1
+    assert task["problem_statement"] and meta["rec"]["sites"] == 2
+    write_bundle([made], out, {})
+    gold = list(csv.DictReader(open(out / "gold_nodes.csv")))
+    assert gold[0]["sites"] == "2" and gold[0]["gold_nodes"].count(";") == 1
+    q = quality([made], 0.0)
+    assert q["gold_nodes_per_task"] == 2 and q["sites_per_task"] == 2

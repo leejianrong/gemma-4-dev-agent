@@ -213,13 +213,41 @@ Output goes to `data/synthetic/stage2b/` (gitignored): `tasks.jsonl`, `graphs/`,
   in them are not in the snapshot. A fail-to-pass test outside `tests_dir` is skipped. Not run: the
   full set (the mutant runs are the 26 hours of stage 2a; about 1,600 snapshots would be about 10 GB).
 
+## Stage 2c result (2026-11-13): multi-site tasks
+
+`--sites K` (`make synthetic-tasks ... SITES=3`) injects K bugs into K different graph nodes of one file
+(`synthetic.mutate.multi_mutations_for_source`, `generate_multi`). The gold patch has K hunks and the
+gold set K nodes (`gold_nodes.csv` gains `sites` and `gold_nodes`). Same-file only, so the nodes are
+same-module siblings, the case A29 measured (62% of co-edited nodes share the module). A multi-site
+mutant may fail up to 10 tests (`MAX_KILLERS_MULTI`) against 5 for a single one. The issue text uses the
+first bug's symptom, as a real report describes one symptom for a patch that touches several places.
+Same sandbox, Docker, no network, as 2b. [measured, seed 0, 4 repos, no model-written text]
+
+| Sites | Mutants tried | Usable | Verified end to end | Gold nodes | Gold lines changed | Fail-to-pass, median | Wall time |
+|---|---|---|---|---|---|---|---|
+| 1 (stage 2b) | 20 | 14 | 14 of 14 | 1 | 2 | 2 | 3 min 26 s (2 repos) |
+| 3 | 35 | 15 | 15 of 15 | 3 | 6 | 4 | 8 min 42 s |
+| 5 | 19 | 7 | 7 of 7 | 5 | 10 | 8 | 3 min 25 s |
+
+- **Yield** is 43% at 3 sites and 37% at 5, against 70% at one site on the same repos; the rest are "too broad" (more than 10
+  tests fail), timeouts, and in cachetools all 10 of 10 (3 sites). Files need at least K nodes with a mutable spot, so small
+  repos give fewer than the requested n (tomli: 3 of 8 at 5 sites).
+- **Difficulty.** Real gold patches change a median 5 lines in the tasks every run solves and 22.5 in the ones none solves (A42).
+  Three sites (6 lines) sit in the first bin and five sites (10 lines) at the edge of it. The never-solved bin (over 10 lines,
+  resolved 11% of task-runs) is not reached: random operator mutations make 2 changed lines per site, and 8 or more sites would
+  fail more than 10 tests nearly every time. So the set is still easier than the real one, but its nodes-per-task now spans the real range (a median of 1 to 3 nodes
+  among mapped tasks, up to many).
+- **Text and checks.** Median 58 to 61 words, no fallback to the bare symptom, no leaks, 3 of 15 and 3 of 7 name the node
+  (planned 20%).
+- **Not done:** cross-file sites, model-written text, a larger run; the validity check below still needs a GPU.
+
 **Still blocked (needs a model, so GPU):**
 1. Model-written issue texts (E4B on Kaggle or any GPU run) from `issue_requests.jsonl`, then the
    stage 1 gates on them: BM25 hit@10 within 45 to 65%, name rate near 20%.
 2. The validity check with positive controls where the answer is known: 31B against a small model,
    and 28 against 10 tool calls. If the synthetic set ranks them the same way as the real set it is
    worth using for prompt screening; if not, it only serves localization questions.
-3. Multi-site and larger mutations, to close the difficulty gap above.
+3. Larger mutations beyond 5 sites or cross-file sites, to close the rest of the difficulty gap (same-file multi-site is done, see stage 2c).
 
 ## Validity check (does the proxy rank like the real set?)
 
