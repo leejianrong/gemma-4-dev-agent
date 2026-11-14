@@ -42,7 +42,8 @@ tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions 
 - Hidden tests come from private repos. No repo-specific prompt tricks; hold out rich when judging a change.
 - Resolution cannot detect gains under about 11 points with two replicates of 36 tasks: judge prompt
   changes by a log signal too (call of the first edit, edit failures, calls per task).
-- No GPU here (7 GB RAM). Model runs happen on Kaggle L4x4 or a RunPod pod.
+- The old machine had no GPU (7 GB RAM). Model runs happened on Kaggle L4x4 or RunPod; RunPod credit is now exhausted, so
+  runs move to a local GPU (`docs/LOCAL_STATE.md`).
 
 ## GPU time
 - Kaggle: weekly quota, L4x4 counts double (about 15 h, about five 36-task runs). The CLI cannot cancel
@@ -51,8 +52,8 @@ tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions 
   `python -m pod.scrub`. Full recipe, prices and pitfalls: `docs/GPU_RUNS.md` ("How we run a pod today").
 - Never print or cat credential files (`~/.runpod`, `~/.kaggle`, `.env`); read one value by name.
 - Other projects run pods on this account. Only terminate pods named `rp-job*` that we created.
-- Cap is 10 USD in total; the account limit cannot be lowered. Report cost after every job. Spend state is
-  in `docs/LOCAL_STATE.md` (about 9 USD of our cap used by 2026-11-12; balance 0.52 USD on 2026-11-13).
+- Cap is 10 USD in total; the account limit cannot be lowered. The balance is exhausted (2026-11-13), so do not
+  start pods unless the owner adds credit. Spend state is in `docs/LOCAL_STATE.md`.
 - A pod's Python is not Kaggle's image: keep the env gate (`pod/env_check.py`, `pod/test_env.sh`) on every GPU job.
 - `rp up` reuses a pod with the same name: terminate the old pod first, and give parallel pods their own
   `RP_POD_NAME` and `RP_STATE_FILE`.

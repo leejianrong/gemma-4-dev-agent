@@ -51,15 +51,18 @@ traces on every new pod run (T3 could not finish its whitespace test for lack of
 
 - **RunPod spend.** Cap: 10 USD in total for this project; the account spend limit (80 USD) cannot be
   lowered and the account is shared with other projects. Our own jobs came to about 9.0 USD by
-  2026-11-12 (`docs/GPU_RUNS.md` sections 12 and 14, estimates). `runpodctl user` showed a balance of
-  **0.52 USD on 2026-11-13**, below what the estimate implies, so another project may have drawn
-  from the account. Check the balance before and after any job; report cost after every job; add the
-  figure to `GPU_RUNS.md`. A previous auto-memory note held this state; it does not travel.
+  2026-11-12 (`docs/GPU_RUNS.md` sections 12 and 14, estimates). **The balance is exhausted** (0.52 USD
+  on 2026-11-13, confirmed by the owner 2026-11-14), so no more RunPod jobs. GPU work moves to a machine
+  with a local GPU. A previous auto-memory note held this state; it does not travel.
+- **Local GPU.** The harness was built for Kaggle's L4x4 and RunPod pods. On a local card, start from
+  `pod/gpu_run.py` and `pod/job.sh` (they unpack data, gate on `pod/env_check.py`, run vLLM, write
+  `OUT_DIR`) and the small-model `EVAL_TP` setting in `kaggle/`. Keep the env gate and save raw traces.
+  The model weights come from Kaggle (`w4a16-ct` variants, see `docs/GPU_RUNS.md`).
 - **Other projects' pods** run on the same account. Only terminate pods named `rp-job*` that we created.
   A failed `runpodctl pod list` means "unknown".
 - **Kaggle GPU quota** (weekly, L4x4 counts double) was spent on 2026-11-13; it resets weekly.
-- **Kaggle Writeup (paper track).** Deadline 2026-11-12 has passed. Whether the writeup was
-  submitted is **not recorded in the repo**: check the Kaggle page. Field plan: `docs/WRITEUP_FIELDS.md`.
+- **Kaggle Writeup (paper track).** Submitted before the 2026-11-12 deadline (owner, 2026-11-14).
+  Field plan: `docs/WRITEUP_FIELDS.md`.
 - **Pandan board GEM (id 45).** Cards track slices; run `pandan board use GEM`. `pandan comment add
   CARD --body "..."` needs `--body`; `pandan move` prints only a help line even when it works.
 - **Open requests to people.** (1) Host forum question on LoRA adapters trained on task data, to be
