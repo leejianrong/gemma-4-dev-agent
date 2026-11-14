@@ -266,6 +266,15 @@ def test_dtype_follows_the_gpu_unless_overridden():
         er.er_dtype(7, False, None)
 
 
+def test_gpu_memory_share_defaults_to_the_competition_value_unless_overridden():
+    # A shared desktop GPU (other processes hold VRAM) needs a smaller share than the L4s' 0.90.
+    assert er.er_gpu_util(None) == 0.90 and er.er_gpu_util("") == 0.90
+    assert er.er_gpu_util("0.6") == 0.6
+    for bad in ("0", "1.2", "lots"):
+        with pytest.raises(SystemExit):
+            er.er_gpu_util(bad)
+
+
 def test_tensor_parallel_follows_the_gpu_count_unless_overridden():
     assert [er.er_tp(n) for n in (1, 2, 3, 4)] == [1, 2, 2, 4]
     assert er.er_tp(4, 1) == 1  # a small model on Kaggle's four L4s
