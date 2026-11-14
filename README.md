@@ -29,6 +29,7 @@ flowchart LR
 | Localizer skill in the agent | 14 and 14 of 36: no effect detected |
 | Run-a-test prompt | 15 of 36, one replicate: the agent ignored the instruction |
 | Small models, baseline prompt | E4B 5 of 36, E2B 6 of 36, one replicate each, about 0.5 USD each |
+| Small models, v2 prompt | E4B 8 of 36, E2B 5 of 36, one replicate each: inside the noise (A46) |
 | What separates solved tasks | gold-patch size (median 5 lines solved, 22 never solved), not where the agent looks |
 
 ## Quick start
@@ -58,7 +59,13 @@ No GPU is needed to edit, package or analyse. To run the agent on tasks you need
 | Colab T4 | free | not tried; reference in `docs/reference/colab/` |
 
 The recipe, prices and pitfalls are in [`docs/GPU_RUNS.md`](docs/GPU_RUNS.md). The RunPod spend cap
-is 10 USD in total.
+is 10 USD in total and the credit is exhausted; Kaggle quota is spent until it resets. The work is moving to a local GPU.
+
+## Taking over on a new machine
+
+Read [`CLAUDE.md`](CLAUDE.md), then [`docs/LOCAL_STATE.md`](docs/LOCAL_STATE.md): it lists every
+gitignored file (data, run outputs, kernels), where it came from and how to regenerate it, plus the
+state that lives outside git (RunPod balance, board, open requests).
 
 ## Where things are
 
@@ -69,7 +76,7 @@ is 10 USD in total.
 | `analysis/` | analysis scripts: failure classes, task features, trace review, dev subset |
 | `pod/`, `kaggle/` | the pod GPU job and the Kaggle eval-runner kernel builder |
 | `synthetic/` | synthetic task generator: mutation, graphs, embeddings, export |
-| `docs/` | competition notes, plans, GPU recipe, failure analysis, decisions (`adr/`), `reference/` |
+| `docs/` | competition notes, plans, GPU recipe, failure analysis, decisions (`adr/`), `reference/`, `research/` (literature, trace analyses, LoRA plan), `LOCAL_STATE.md` (what is not in git) |
 
 ## Contributing
 

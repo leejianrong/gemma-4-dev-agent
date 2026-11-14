@@ -1,6 +1,6 @@
 # Research notes (2026-11-13)
 
-Written while Kaggle GPU quota was spent and about 1.8 USD of the 10 USD RunPod cap was left. Question: what can
+Written while Kaggle GPU quota was spent and about 1 USD of the 10 USD RunPod cap was left by our estimate (the account balance read 0.52 USD on 2026-11-13). Question: what can
 we learn without a GPU, and how do other people get round GPU limits? Web search only; no paper was read in full
 and several results are search snippets or aggregator pages. Check a number against the paper before citing it.
 
