@@ -28,8 +28,8 @@ looked it up or ran it, **[guess]** an estimate that a real attempt must confirm
 - **Watching:** `pod logs --tail` accepts at most 5000 lines. RunPod's API times out for a minute now
   and then: a failed `pod list` means "unknown", never "pod gone". The job's own "no progress" warning
   fires during healthy evals; trust the kernel's `HEARTBEAT` line.
-- **Spend** is tracked in the auto-memory file `runpod-spend-tracking.md`, not in the repo. About 8.1 USD
-  of the 10 USD cap was used by 2026-11-12.
+- **Spend** is tracked in `docs/LOCAL_STATE.md` and the per-job figures below. About 9.0 USD of the
+  10 USD cap was used by 2026-11-12 (estimate); the account balance was 0.52 USD on 2026-11-13.
 - **Kaggle instead:** L4x4 notebooks use the weekly GPU quota at twice the rate (about 15 h a week, so
   about five 36-task runs); a replicate takes about 2.9 h there. Same hardware as the leaderboard.
 - **Colab T4:** not tried; see section 11.

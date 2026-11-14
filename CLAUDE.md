@@ -4,14 +4,18 @@ Entry for https://www.kaggle.com/competitions/gemma-4-developer-agent. We build 
 (YAML agent config, prompts, skills, optional LoRA) that Kaggle compiles into a Google ADK agent.
 Score = % of ~120 hidden SWE-style tasks whose patch passes hidden pytest tests.
 Dates: paper deadline 2026-11-12 has passed (draft `paper/DRAFT.md`); entry/merge 2026-11-25; final 2026-12-02.
-Read `docs/COMPETITION.md` first (rules, limits, dataset). Planning state: `docs/QUESTIONS.md` (A-rows
+Read `docs/COMPETITION.md` first (rules, limits, dataset), then `docs/LOCAL_STATE.md` (gitignored files, where they came
+from, state outside git: read it on a new machine). Planning state: `docs/QUESTIONS.md` (A-rows
 tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions `docs/adr/`, run log
 `experiments/runs.csv`, GPU recipe `docs/GPU_RUNS.md`.
 
 ## Status: trust the code over the docs
 - `submission/` is the adopted public baseline (flexonafft v2). Public leaderboard 0.18; 31B on our
   36 dev tasks resolves 13 and 15. Skill, run-a-test prompt: no effect (A40, A41). Small models: E4B 5,
-  E2B 6 of 36 (A43). Active: prompt bundles in `experiments/bundles/`, small-model tuning (GEM-36).
+  E2B 6 of 36 (A43); v2 prompts E4B 8, E2B 5 (A46). Active: small-model tuning (GEM-36); `e4b_v3` and `e2b_v3`
+  have no run row yet. Kaggle GPU quota is spent. Research notes: `docs/research/`. LoRA: terms no longer block
+  (adapters ship privately, host question pending); stage 1 found 52 resolved runs over 16 fastapi tasks, so no
+  pod test yet (`docs/research/lora-pod-plan.md`).
 - Board: pandan, GEM = board 45. `pandan comment add CARD --body "..."` needs `--body`; `pandan move`
   prints only a help line even when it works, so verify with `pandan get`.
 
@@ -48,7 +52,7 @@ tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions 
 - Never print or cat credential files (`~/.runpod`, `~/.kaggle`, `.env`); read one value by name.
 - Other projects run pods on this account. Only terminate pods named `rp-job*` that we created.
 - Cap is 10 USD in total; the account limit cannot be lowered. Report cost after every job. Spend state is
-  in the auto-memory file `runpod-spend-tracking.md`, not in the repo.
+  in `docs/LOCAL_STATE.md` (about 9 USD of our cap used by 2026-11-12; balance 0.52 USD on 2026-11-13).
 - A pod's Python is not Kaggle's image: keep the env gate (`pod/env_check.py`, `pod/test_env.sh`) on every GPU job.
 - `rp up` reuses a pod with the same name: terminate the old pod first, and give parallel pods their own
   `RP_POD_NAME` and `RP_STATE_FILE`.
