@@ -54,20 +54,12 @@ traces on every new pod run (T3 could not finish its whitespace test for lack of
   2026-11-12 (`docs/GPU_RUNS.md` sections 12 and 14, estimates). **The balance is exhausted** (0.52 USD
   on 2026-11-13, confirmed by the owner 2026-11-14), so no more RunPod jobs. GPU work moves to a machine
   with a local GPU. A previous auto-memory note held this state; it does not travel.
-- **Local GPU.** The harness was built for Kaggle's L4x4 and RunPod pods. On a local card, start from
-  `pod/gpu_run.py` and `pod/job.sh` (they unpack data, gate on `pod/env_check.py`, run vLLM, write
-  `OUT_DIR`) and the small-model `EVAL_TP` setting in `kaggle/`. Keep the env gate and save raw traces.
-  The model weights come from Kaggle (`w4a16-ct` variants, see `docs/GPU_RUNS.md`).
-- **Other projects' pods** run on the same account. Only terminate pods named `rp-job*` that we created.
-  A failed `runpodctl pod list` means "unknown".
-- **Kaggle GPU quota** (weekly, L4x4 counts double) was spent on 2026-11-13; it resets weekly.
-- **Kaggle Writeup (paper track).** Submitted before the 2026-11-12 deadline (owner, 2026-11-14).
-  Field plan: `docs/WRITEUP_FIELDS.md`.
-- **Pandan board GEM (id 45).** Cards track slices; run `pandan board use GEM`. `pandan comment add
-  CARD --body "..."` needs `--body`; `pandan move` prints only a help line even when it works.
-- **Open requests to people.** (1) Host forum question on LoRA adapters trained on task data, to be
-  posted before the 2026-12-02 final submission, reply recorded in `docs/COMPETITION.md`.
-  (2) T8 in `docs/research/tasks.md`: read the Kaggle Discussion and Code tabs, which needs a human login.
+- **Local GPU.** The harness targets Kaggle's L4x4 and RunPod pods. `pod/gpu_run.py DATA OUT` runs a built
+  eval kernel (`make kernel-eval`, `kaggle/build_kernel.py`) and finds data, wheels and weights through
+  `DATA_DIR`, `OUT_DIR`, `ER_WHEELHOUSE_DIR` and `ER_MODEL_ROOT_DIR`; point those at local copies. `pod/job.sh`
+  is the pod wrapper (data receive via `runpodctl`, heartbeats) and is not needed locally. Keep the env gate
+  (`pod/env_check.py`) and save raw traces. Weights and the wheelhouse come from Kaggle (`docs/GPU_RUNS.md`).
+  Not yet tried locally: expect to debug paths and GPU settings (`EVAL_TP`).
 
 ## Working rules that survive the move
 
