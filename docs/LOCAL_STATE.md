@@ -60,7 +60,7 @@ traces on every new pod run (T3 could not finish its whitespace test for lack of
   is the pod wrapper (data receive via `runpodctl`, heartbeats) and is not needed locally. Keep the env gate
   (`pod/env_check.py`) and save raw traces. Weights and the wheelhouse come from Kaggle (`docs/GPU_RUNS.md`).
   Set `ER_VLLM_GPU_UTIL` (default 0.90, as on Kaggle) below the free share of VRAM when other processes hold
-  some, e.g. 0.6 on a 16 GB laptop GPU with 5.5 GB in use. Not yet tried locally: expect to debug paths and `EVAL_TP`.
+  some, but E4B's weights alone are 11.5 GB (measured), so it needs about 0.85 of 16 GB and other processes must free the rest. Not yet tried locally: expect to debug paths and `EVAL_TP`.
 
 ## Working rules that survive the move
 
