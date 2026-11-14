@@ -11,6 +11,7 @@ Usage: python scripts/fetch_data.py [--snapshots none|scored|all] [--workers 2] 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import re
 import subprocess
@@ -87,6 +88,12 @@ def fetch_one(name: str, size: int, dest: Path, tries: int = 6) -> bool:
             text=True,
             timeout=1800,
         )
+        # kaggle CLI 2.x keeps the subfolder of -f under -p (dir/dir/x), older ones don't
+        nested = target.parent / name
+        if nested != target and nested.is_file() and not target.is_file():
+            nested.rename(target)
+            with contextlib.suppress(OSError):  # a parallel worker may still have a file in it
+                nested.parent.rmdir()
         z = Path(str(target) + ".zip")
         if not target.is_file() and z.is_file():
             with zipfile.ZipFile(z) as zf:
