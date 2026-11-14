@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 spec = importlib.util.spec_from_file_location("fetch_data", Path("scripts/fetch_data.py"))
 fd = importlib.util.module_from_spec(spec)
@@ -31,3 +32,27 @@ def test_test_dependency_wheels_come_with_snapshots_only():
     rows = [("tasks.jsonl", 1), ("wheels/a.whl", 2), ("snapshots/x_1.tgz", 3)]
     assert "wheels/a.whl" not in [n for n, _ in fd.wanted(rows, "none", set())]
     assert "wheels/a.whl" in [n for n, _ in fd.wanted(rows, "scored", {"x_1"})]
+
+
+def _fake_cli(layout):
+    """A stand-in for `kaggle competitions download -f NAME -p DIR`; layout says where it writes."""
+
+    def run(cmd, **_):
+        name, out = cmd[cmd.index("-f") + 1], Path(cmd[cmd.index("-p") + 1])
+        dest = out / name if layout == "keeps-subfolder" else out / Path(name).name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"12345")
+        return SimpleNamespace(stdout="", stderr="")
+
+    return run
+
+
+def test_fetch_one_accepts_both_kaggle_cli_layouts(tmp_path, monkeypatch):
+    # kaggle CLI 2.x writes embeddings/x.npz under -p as embeddings/x.npz; older ones flattened it.
+    for layout in ("keeps-subfolder", "flat"):
+        dest = tmp_path / layout
+        monkeypatch.setattr(fd.subprocess, "run", _fake_cli(layout))
+        monkeypatch.setattr(fd.time, "sleep", lambda _: None)
+        assert fd.fetch_one("embeddings/x.npz", 5, dest, tries=1)
+        assert (dest / "embeddings" / "x.npz").is_file()
+        assert not (dest / "embeddings" / "embeddings").exists()
