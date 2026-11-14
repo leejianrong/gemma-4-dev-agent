@@ -419,6 +419,19 @@ def er_dtype(major: int, bf16: bool, override: str | None) -> str:
     return "bfloat16" if bf16 else "auto"
 
 
+def er_gpu_util(override: str | None) -> float:
+    """vLLM's GPU memory share: 0.90 as in the competition, or ER_VLLM_GPU_UTIL for a shared GPU."""
+    if not override:
+        return 0.90
+    try:
+        share = float(override)
+    except ValueError:
+        share = 0.0
+    if not 0 < share <= 1:
+        raise SystemExit(f"ERROR ER_VLLM_GPU_UTIL={override!r} must be a number in (0, 1]")
+    return share
+
+
 def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict:
     """The whole run. Returns the report; raises on a failure that should fail the kernel."""
     t0 = time.time()
@@ -519,7 +532,7 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
         reasoning_parser="gemma4",
         max_model_len=32768,
         dtype=dtype,
-        gpu_memory_utilization=0.90,
+        gpu_memory_utilization=er_gpu_util(os.environ.get("ER_VLLM_GPU_UTIL")),
         enable_auto_tool_choice=True,
         enable_lora=bool(adapter_map),
         max_loras=max(1, len(adapter_map)),

@@ -59,7 +59,8 @@ traces on every new pod run (T3 could not finish its whitespace test for lack of
   `DATA_DIR`, `OUT_DIR`, `ER_WHEELHOUSE_DIR` and `ER_MODEL_ROOT_DIR`; point those at local copies. `pod/job.sh`
   is the pod wrapper (data receive via `runpodctl`, heartbeats) and is not needed locally. Keep the env gate
   (`pod/env_check.py`) and save raw traces. Weights and the wheelhouse come from Kaggle (`docs/GPU_RUNS.md`).
-  Not yet tried locally: expect to debug paths and GPU settings (`EVAL_TP`).
+  Set `ER_VLLM_GPU_UTIL` (default 0.90, as on Kaggle) below the free share of VRAM when other processes hold
+  some, e.g. 0.6 on a 16 GB laptop GPU with 5.5 GB in use. Not yet tried locally: expect to debug paths and `EVAL_TP`.
 
 ## Working rules that survive the move
 
