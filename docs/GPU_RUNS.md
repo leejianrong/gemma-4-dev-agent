@@ -435,3 +435,26 @@ runner refuses GPUs below compute 8.0, as before. The notebook runs a one-task p
 E2B v2 and E4B v2 ran on an RTX 4000 Ada (20 GB, secure on-demand, 0.28 USD/h) with the same harness, data upload and
 gate: 3,929 s and 5,597 s for 36 tasks, about 0.4 and 0.55 USD with the upload wait. Per-job spend so far is about
 9.0 USD of the 10 USD cap, so about 1 USD is left (one more small-model replicate). [estimate]
+
+## 15. Local GPU (2026-11-14)
+
+`pod/local_run.sh` runs the same built eval kernel on this machine's GPU (RTX 3080 Ti Laptop, 16 GB,
+WSL2). `setup MODEL` builds a Python 3.12 venv in `~/gpu-work` (`LOCAL_GPU_WORK`), downloads the
+wheelhouse and weights, runs `pod/gpu_setup.sh`, then `pod/test_env.sh` again. `gate IDS` runs the
+gold-patch check, `run NAME` runs `kaggle/eval_kernel/kernel.py`; output lands in `~/gpu-work/out/NAME`
+with raw traces. [measured]
+
+- **Everything runs in a container** (`docker run --gpus all --network none --cap-drop ALL`, data
+  read-only, 22 GB memory cap). The harness's `subprocess` sandbox runs repository tests and the model's
+  shell commands, and on a pod that is disposable; on this machine it is not.
+- **Pin the test stack after `gpu_setup.sh`.** The setup upgrades anyio (4.13 to 4.16), pydantic, click,
+  typer and requests past the Kaggle image's pins, and fastapi's tests then fail on a
+  `DeprecationWarning`. `gpu_run.py` pins before it installs; `local_run.sh` pins last. [measured]
+- **Container pitfalls:** tmpfs needs `exec` (Triton maps a compiled `.so` from `/tmp`), and the user
+  needs a name (`USER` set) because torch looks up the uid. [measured]
+- **VRAM.** E4B weights are 11.5 GB (`model.safetensors`). `ER_VLLM_GPU_UTIL=0.88` starts in about 95 s
+  and peaks at 14.8 of 16.4 GB with nothing else on the GPU; other processes holding VRAM will break it.
+  31B (21.7 GiB) does not fit. [measured]
+- **Gate:** the gold patches pass on 24 of the 36 dev tasks in this environment; the 12 failures are
+  mostly missing `inline_snapshot` and `dirty_equals` (A39). [measured]
+- One-task E4B probe: 233 s wall, pipeline ran end to end.

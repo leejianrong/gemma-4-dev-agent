@@ -59,7 +59,7 @@ No GPU is needed to edit, package or analyse. To run the agent on tasks you need
 | Colab T4 | free | not tried; reference in `docs/reference/colab/` |
 
 The recipe, prices and pitfalls are in [`docs/GPU_RUNS.md`](docs/GPU_RUNS.md). The RunPod spend cap
-is 10 USD in total and the credit is exhausted; Kaggle quota is spent until it resets. The work is moving to a local GPU.
+is 10 USD in total and the credit is exhausted; Kaggle quota is spent until it resets. Model runs use the local GPU (`pod/local_run.sh`).
 
 ## Taking over on a new machine
 

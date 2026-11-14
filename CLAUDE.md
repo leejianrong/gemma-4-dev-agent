@@ -43,7 +43,7 @@ tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions 
 - Resolution cannot detect gains under about 11 points with two replicates of 36 tasks: judge prompt
   changes by a log signal too (call of the first edit, edit failures, calls per task).
 - The old machine had no GPU (7 GB RAM). Model runs happened on Kaggle L4x4 or RunPod; RunPod credit is now exhausted, so
-  runs move to a local GPU (`docs/LOCAL_STATE.md`).
+  runs use the local 16 GB GPU through `pod/local_run.sh` (small models only; `docs/GPU_RUNS.md` section 15).
 
 ## GPU time
 - Kaggle: weekly quota, L4x4 counts double (about 15 h, about five 36-task runs). The CLI cannot cancel

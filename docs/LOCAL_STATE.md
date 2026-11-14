@@ -54,13 +54,9 @@ traces on every new pod run (T3 could not finish its whitespace test for lack of
   2026-11-12 (`docs/GPU_RUNS.md` sections 12 and 14, estimates). **The balance is exhausted** (0.52 USD
   on 2026-11-13, confirmed by the owner 2026-11-14), so no more RunPod jobs. GPU work moves to a machine
   with a local GPU. A previous auto-memory note held this state; it does not travel.
-- **Local GPU.** The harness targets Kaggle's L4x4 and RunPod pods. `pod/gpu_run.py DATA OUT` runs a built
-  eval kernel (`make kernel-eval`, `kaggle/build_kernel.py`) and finds data, wheels and weights through
-  `DATA_DIR`, `OUT_DIR`, `ER_WHEELHOUSE_DIR` and `ER_MODEL_ROOT_DIR`; point those at local copies. `pod/job.sh`
-  is the pod wrapper (data receive via `runpodctl`, heartbeats) and is not needed locally. Keep the env gate
-  (`pod/env_check.py`) and save raw traces. Weights and the wheelhouse come from Kaggle (`docs/GPU_RUNS.md`).
-  Set `ER_VLLM_GPU_UTIL` (default 0.90, as on Kaggle) below the free share of VRAM when other processes hold
-  some, but E4B's weights alone are 11.5 GB (measured), so it needs about 0.85 of 16 GB and other processes must free the rest. Not yet tried locally: expect to debug paths and `EVAL_TP`.
+- **Local GPU.** This machine has an RTX 3080 Ti Laptop (16 GB). `pod/local_run.sh` (setup, gate, run) runs the
+  eval kernel in a container; recipe and pitfalls in `docs/GPU_RUNS.md` section 15. E4B and E2B fit
+  (`ER_VLLM_GPU_UTIL=0.88`, nothing else on the GPU), 31B does not. Keep the env gate and save raw traces.
 
 ## Working rules that survive the move
 
