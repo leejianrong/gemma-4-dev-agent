@@ -458,3 +458,27 @@ with raw traces. [measured]
 - **Gate:** the gold patches pass on 24 of the 36 dev tasks in this environment; the 12 failures are
   mostly missing `inline_snapshot` and `dirty_equals` (A39). [measured]
 - One-task E4B probe: 233 s wall, pipeline ran end to end.
+
+## 16. Local job queue: pueue (2026-11-15)
+
+Research spike result: use [pueue](https://github.com/Nukesor/pueue) (4.0.4, `cargo install --locked pueue`) for
+the queue and add two small pieces of our own. Nothing found does GPU-aware queuing, an ETA from past runs and
+container-friendly VRAM accounting together. Compared: gflow (Linux and tmux only, recent docs.rs builds failed),
+gpusched (two releases, per-job VRAM attribution fails in containers), gpuq (0.1.3, three months old), Slurm on one
+node (heavy; its start estimates rest on declared time limits). Jobs here take the whole card, so placement logic
+is moot and a one-job group is enough. [guess, from the docs and PyPI metadata]
+
+- **Daemon:** `~/.config/systemd/user/pueued.service` runs `~/.cargo/bin/pueued` (WSL has systemd on). The
+  default group runs one job at a time. [measured]
+- **Queue a run:** `python scripts/gpu_queue.py add RUN_ID BUNDLE MODEL [--seed N]` runs `pod/local_job.sh`:
+  wait for VRAM, build the kernel, run it in the container. The job label is `RUN_ID|MODEL|N_TASKS`.
+- **`gpu_queue.py wait-vram`:** blocks until free VRAM covers `ER_VLLM_GPU_UTIL` of the card plus a 512 MiB
+  margin. Nothing caps VRAM under WSL2, other processes take 1 to 5 GB, and a CUDA workload that drives free
+  VRAM to zero is reported to crash the Windows host. [measured for the VRAM use; the crash is from an NVIDIA
+  forum thread, not reproduced]
+- **`gpu_queue.py eta`:** each unfinished job's start and finish time: the median `minutes_per_task` of past
+  runs of that model in `experiments/runs.csv` times the task count, chained through the queue. A running job
+  past its estimate counts as ending now. Only a rough guide (E4B 2.4 to 3.3 min per task so far).
+- **Pitfalls:** pueue stores the whole environment of the shell that adds a job, so `add` passes a minimal one
+  (no tokens). Do not auto-restart failed jobs from an agent (a third-party report describes a queue growing from
+  60 to about 12,800 jobs). Queue jobs only when nothing else builds `kaggle/eval_kernel/kernel.py` or uses the GPU.
