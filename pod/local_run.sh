@@ -9,7 +9,7 @@
 # the container has no network, no capabilities and only read-only data. Build the kernel first
 # (make kernel-eval). MODEL is e.g. gemma-4-e4b-it-qat-w4a16-ct. Needs uv, docker with the NVIDIA
 # runtime and a kaggle login.
-# ER_VLLM_GPU_UTIL is vLLM's share of VRAM (default 0.88: E4B weights are 11.5 GB on a 16 GB card).
+# ER_VLLM_GPU_UTIL is vLLM's share of VRAM (default 0.80, which leaves about 3 GB for the desktop; see docs/GPU_RUNS.md section 16).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -40,13 +40,13 @@ in_container() {
   local py
   py="$(readlink -f "$VENV/bin/python3")"
   py="$(dirname "${py%/bin/*}")"  # uv's python folder, which the venv links into (also by alias)
-  docker run --rm --gpus all --network none --cap-drop ALL --security-opt no-new-privileges \
+  docker run --rm --name "gemma-$out" --gpus all --network none --cap-drop ALL --security-opt no-new-privileges \
     --pids-limit 4096 --memory "${LOCAL_GPU_MEM:-22g}" --shm-size 8g \
     --tmpfs /tmp:rw,exec,size=8g \
     --user "$(id -u):$(id -g)" -e HOME="$W/home" -e USER=gemma -e LOGNAME=gemma -e HF_HUB_OFFLINE=1 \
     -e PATH="$VENV/bin:/usr/local/bin:/usr/bin:/bin" \
     -e DATA_DIR=/data -e OUT_DIR=/out -e ER_WHEELHOUSE_DIR="$WHEELS" -e ER_MODEL_ROOT_DIR="$W/models" \
-    -e ER_VLLM_GPU_UTIL="${ER_VLLM_GPU_UTIL:-0.88}" \
+    -e ER_VLLM_GPU_UTIL="${ER_VLLM_GPU_UTIL:-0.80}" \
     -v "$VENV:$VENV" -v "$py:$py:ro" \
     -v "$REPO/pod:/repo/pod:ro" -v "$REPO/kaggle/eval_kernel:/repo/kernel:ro" \
     -v "$REPO/data/competition:/data:ro" -v "$WHEELS:$WHEELS:ro" -v "$W/models:$W/models:ro" \

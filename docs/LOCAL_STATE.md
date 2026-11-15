@@ -56,7 +56,7 @@ traces on every new pod run (T3 could not finish its whitespace test for lack of
   with a local GPU. A previous auto-memory note held this state; it does not travel.
 - **Local GPU.** This machine has an RTX 3080 Ti Laptop (16 GB). `pod/local_run.sh` (setup, gate, run) runs the
   eval kernel in a container; recipe and pitfalls in `docs/GPU_RUNS.md` section 15. E4B and E2B fit
-  (`ER_VLLM_GPU_UTIL=0.88`, nothing else on the GPU), 31B does not. Keep the env gate and save raw traces.
+  (`ER_VLLM_GPU_UTIL=0.80`, the default), 31B does not. Keep the env gate and save raw traces.
 
 ## Working rules that survive the move
 

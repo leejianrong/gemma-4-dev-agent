@@ -13,5 +13,12 @@ KAGGLE_USER=$(python3 -I -c "import json,os;print(json.load(open(os.path.expandu
 SUBMISSION_DIR="experiments/bundles/$BUNDLE" EVAL_TASKS="$IDS" EVAL_MODEL="$MODEL" EVAL_RUN_ID="$RUN_ID" \
   EVAL_SEED="$SEED" EVAL_MAX_MIN=480 python3 kaggle/build_kernel.py "$KAGGLE_USER" eval >/dev/null
 mkdir -p "$HOME/gpu-work/out/$RUN_ID"
-pod/local_run.sh run "$RUN_ID" >"$HOME/gpu-work/out/$RUN_ID/container.log" 2>&1
-tail -n 5 "$HOME/gpu-work/out/$RUN_ID/container.log" | cut -c1-300
+OUT="$HOME/gpu-work/out/$RUN_ID"
+python3 scripts/gpu_queue.py sample "$OUT/gpu_samples.csv" --container "gemma-$RUN_ID" &
+SAMPLER=$!
+trap 'kill $SAMPLER 2>/dev/null || true' EXIT
+pod/local_run.sh run "$RUN_ID" >"$OUT/container.log" 2>&1
+kill $SAMPLER 2>/dev/null || true
+# a run whose GPU ran out of free VRAM can stall (docs/GPU_RUNS.md section 16): flag it
+python3 scripts/gpu_queue.py check-samples "$OUT/gpu_samples.csv" || touch "$OUT/SUSPECT_VRAM"
+tail -n 5 "$OUT/container.log" | cut -c1-300
