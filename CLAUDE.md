@@ -24,6 +24,7 @@ tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions 
 - `make check` = lint + unit tests + submission pre-flight. Same as pre-push and CI.
 - `make score-local` scores the localizer on `data/competition` inside an isolated container.
 - `make task-features` relates dev-task outcomes to task features (aggregates only).
+- Local GPU queue: `python scripts/gpu_queue.py add|eta` over pueue (`docs/GPU_RUNS.md` section 16).
 - `make zip` builds `dist/submission.zip` (hash must match what `runs.csv` records).
 - `make rehearse` is timing-sensitive: on a busy machine several heartbeat checks fail. Not a gate.
 
