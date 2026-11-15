@@ -482,3 +482,19 @@ is moot and a one-job group is enough. [guess, from the docs and PyPI metadata]
 - **Pitfalls:** pueue stores the whole environment of the shell that adds a job, so `add` passes a minimal one
   (no tokens). Do not auto-restart failed jobs from an agent (a third-party report describes a queue growing from
   60 to about 12,800 jobs). Queue jobs only when nothing else builds `kaggle/eval_kernel/kernel.py` or uses the GPU.
+
+**A stall at 0.88 (2026-11-15) and the guard.** A 36-task replicate at 0.88 stopped getting model replies about
+10 minutes in: tasks 3 to 7 ended as `error` with zero turns after the full 8-minute limit, then replies came back.
+GPU memory was at 16,000 MiB or more of 16,384 in 38 of 50 heartbeats (E4B's 14.8 GB plus about 1.3 GB held by
+another process); the first run never passed 15,227 MiB and ran normally. A stalled task rerun alone behaved
+normally. The cause is not proven (a guess: Windows pages GPU memory when the card is oversubscribed).
+[measured correlation, guess for the cause] So:
+
+- **Default share is now 0.80.** E4B starts with the full 32k context, peaks at 13.5 GB and keeps 2.8 GB free
+  in a one-task test. [measured]
+- **Queued jobs write `gpu_samples.csv`** (VRAM, GPU %, running and waiting requests, tokens) every 30 s into
+  the run folder and end with `check-samples`: a run that ever had under 500 MiB free gets a `SUSPECT_VRAM` file,
+  so do not trust its resolution count. The container is named `gemma-RUN_ID` for this.
+- **pueue orders jobs from sessions that use it; it cannot stop a program that uses the GPU directly.** Other
+  sessions on this machine were told about the queue (2026-11-15). `ollama serve` runs here and loads models on
+  request. The samples show when something else was on the GPU.

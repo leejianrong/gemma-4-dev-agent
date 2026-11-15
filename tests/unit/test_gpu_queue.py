@@ -62,3 +62,27 @@ def test_unknown_estimate_does_not_break_the_queue():
     tasks = {"1": task(1, "Queued", "adhoc job")}
     job = gq.schedule(tasks, [], NOW)[0]
     assert job["est_s"] is None and job["end"] is None
+
+
+def test_low_free_counts_samples_under_the_floor():
+    rows = [
+        {"used_mib": "14810", "total_mib": "16384"},  # 1574 free
+        {"used_mib": "16024", "total_mib": "16384"},  # 360 free
+        {"used_mib": "16144", "total_mib": "16384"},  # 240 free
+    ]
+    assert gq.low_free(rows, 500) == 2
+    assert gq.low_free(rows, 100) == 0
+
+
+def test_job_env_keeps_a_few_variables_and_never_tokens():
+    env = gq.job_env(
+        {"PATH": "/usr/bin", "HOME": "/h", "KAGGLE_API_TOKEN": "secret", "GITHUB_TOKEN": "x"}, 0.8
+    )
+    assert set(env) == {"PATH", "HOME", "ER_VLLM_GPU_UTIL"}
+    # the pueue client finds its daemon socket through this one
+    assert (
+        gq.job_env({"XDG_RUNTIME_DIR": "/run/user/1000"}, None)["XDG_RUNTIME_DIR"]
+        == "/run/user/1000"
+    )
+    assert env["ER_VLLM_GPU_UTIL"] == "0.8" and env["PATH"].endswith(":/usr/bin")
+    assert "ER_VLLM_GPU_UTIL" not in gq.job_env({"PATH": "/usr/bin"}, None)
