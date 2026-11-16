@@ -43,3 +43,11 @@ def test_summarize_counts_without_ids():
     assert out["edited_a_gold_file"] == "1 of 2 (50%)"
     assert out["files_edited_by_kind"] == {"library": 1, "docs": 1}
     assert "fastapi_1" not in str(out)
+
+
+def test_first_edit_call_and_edit_refusal_rate():
+    a, b = sml.parse(BLOCK)
+    assert (a["first_edit"], b["first_edit"]) == (2, 1)
+    out = sml.summarize([a, b])
+    assert out["first_edit_call_median"] == 1.5
+    assert out["edit_refusal_rate"] == "2 of 3 (67%)"
