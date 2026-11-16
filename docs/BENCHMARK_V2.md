@@ -11,7 +11,7 @@ only; nothing here comes from per-task competition data. Numbers marked [estimat
   decides the score (A42: tasks over 10 lines resolve 11% of the time).
 - **Never validated.** The stage-3 rank test needs 6 variants and about 6 replicates on both sets. On this
   GPU that is weeks.
-- **Only 9 repos pass readiness**, and the wheelhouse lists only some test dependencies.
+- **Only 9 repos pass readiness**, and the sandbox stack has only some test dependencies.
 
 ## What it must do
 
@@ -48,10 +48,13 @@ will come from S1 only).
 
 ## Repo pool
 
-Admit a repo when its tests run offline in the competition image with what the wheelhouse holds (pytest,
-click, jinja2, werkzeug, markdown-it-py, pygments, sqlalchemy, tqdm, typer and so on). v1 rejected 14 of 23
-on a stricter rule; rerun readiness against the wheelhouse list rather than "stdlib only", and add repos by
-that rule. Hold out whole repos for evaluation (train repos and eval repos never overlap).
+Admit a repo when every module its tests import is installed in the sandbox image. The image is the
+competition's test stack (`docker/synthetic/requirements.txt`, mirrors `pod/test_env.sh`: pytest, anyio,
+httpx, starlette, fastapi, pydantic, Jinja2, SQLAlchemy, Flask, Werkzeug, click, typer, rich, requests,
+PyYAML and their dependencies; no tqdm, hypothesis, freezegun or pytest-asyncio). `synthetic/sandbox_modules.txt`
+lists what it can import, and `python -m synthetic.readiness CACHE --installed synthetic/sandbox_modules.txt`
+applies the rule. A repo's declared runtime dependencies must be installed too. Hold out whole repos for
+evaluation (train repos and eval repos never overlap).
 
 ## Realism checks (before any agent run)
 
@@ -96,14 +99,34 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
 | Slice | Output | Gate |
 |---|---|---|
 | B0 Concurrency probe | tokens/s and timeouts at N = 1, 2, 4 on 12 existing dev tasks | Pick N with under 10% extra timeouts |
-| B1 Pool and S3 at scale | Readiness against wheelhouse, 8+ repos, 300 mutant tasks | Realism checks pass |
+| B1 Pool and S3 at scale | Readiness against the sandbox stack, 8+ repos, 300 mutant tasks | Realism checks pass (size gate fails for S3: see B1 result) |
 | B2 S1 miner | Real-commit tasks from the pool, verified twice in Docker | 100+ tasks, size histogram reported |
 | B3 Issue text | Model-written text with leak checks | BM25 and leak gates |
 | B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only |
 | B5 Training data | Self-distilled traces, repo-split | Needs B4 or accepted as training-only |
 
+## B1 result (2026-11-16): pool and operator mutants
+
+- **Pool.** Of the 23 manifest repos the rule admits 10: click, typer, markdown-it-py, mistune, cachetools,
+  sqlparse, toolz, more-itertools, sortedcontainers, tomli. The old stdlib-only rule admitted 9 (toolz is new).
+  The stack is too small to admit the web repos (starlette, werkzeug, flask need trio, watchdog and
+  test-local modules) or ones that need hypothesis or freezegun. Adding those packages to our image would
+  widen the pool but make the agent's own test runs differ from the competition's, so we did not.
+- **Typer fails the baseline.** It is admitted statically, but only 72.5% of its own tests pass in the image,
+  so the mutant build rejected it. Static admission is necessary, not sufficient.
+- **S3 at scale.** 60 mutants per repo over the 9 other repos gave 251 tasks (click 19, markdown-it-py 18,
+  mistune 14, cachetools 21, sqlparse 27, toolz 40, more-itertools 41, sortedcontainers 29, tomli 42), all
+  verified end to end. This misses the 300 target; 110 mutants per repo would reach it. The run took 2.4 h
+  of CPU containers (more-itertools alone 76 min).
+- **Realism, against the 129 public tasks (`python -m synthetic.realism`).** Gold size fails the gate:
+  every mutant task has 2 gold lines (public median 12, p25 4, p90 128), so the histogram distance over
+  the four size bins is 0.68 (0 = same, 1 = disjoint). Public bins: 32% <=4 lines, 19% 5 to 12, 24% 13 to 44,
+  25% over 44; mutants put 100% in the first. Issue length matches (median 58 words) because the
+  generator is templated, which says nothing about realism. S3 stays the cheap control; the middle and large
+  bins have to come from S1.
+
 ## Open questions
 
 - Do old commits run with the sandbox's installed dependency versions? S1 yield depends on it.
-- Is the competition's grading image a superset of the wheelhouse? (A39, GEM-94.)
+- Is the competition's grading image a superset of the sandbox stack? (A39, GEM-94.)
 - Does concurrency change E4B behaviour beyond timing (it should not, but measure)?

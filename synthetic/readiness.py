@@ -11,6 +11,7 @@ streams per-repo cached site-packages into the sandbox (data/HARNESS_README.md, 
 the list is not published. So "declared runtime dependency" is an assumption that the image has
 whatever the repo needs to import, and any test-only dependency counts as missing.
 Usage: python -m synthetic.readiness CACHE_DIR [--manifest M] [--update-manifest]
+       [--installed synthetic/sandbox_modules.txt]  admit by what the sandbox image has installed
 """
 
 from __future__ import annotations
@@ -164,7 +165,34 @@ def _fixtures_and_markers(tests_dir: Path) -> tuple[set[str], set[str], set[str]
     return used, defined, markers, "\n".join(text)
 
 
-def check_repo(name: str, repo: Path, modules: str | list[str], tests_rel: str | None) -> dict:
+def load_installed(path: Path) -> dict[str, set[str]]:
+    """The sandbox packages (sandbox_modules.txt): a line per distribution, then its imports."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    rows = (ln.split() for ln in lines if ln.strip())
+    return {r[0]: set(r[1:]) for r in rows}
+
+
+def _runtime_requirements(repo: Path) -> set[str]:
+    """Runtime dependencies without an environment marker (a `; marker` one may not apply)."""
+    pp = repo / "pyproject.toml"
+    try:
+        data = tomllib.loads(pp.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return set()
+    deps = data.get("project", {}).get("dependencies", [])
+    return {norm(re.split(r"[\s<>=!~;\[(]", d, maxsplit=1)[0]) for d in deps if ";" not in d}
+
+
+def check_repo(
+    name: str,
+    repo: Path,
+    modules: str | list[str],
+    tests_rel: str | None,
+    installed: dict[str, set[str]] | None = None,
+) -> dict:
+    """With `installed` (the sandbox's packages), a module is fine only if the sandbox has it."""
+    have_dists = {norm(d) for d in installed or {}}
+    have_mods = {norm(m) for ms in (installed or {}).values() for m in ms}
     own = {modules} if isinstance(modules, str) else set(modules)
     reasons: list[str] = []
     third: set[str] = set()
@@ -180,21 +208,35 @@ def check_repo(name: str, repo: Path, modules: str | list[str], tests_rel: str |
         tests = repo / tests_rel
         root = {p.name for p in repo.iterdir() if p.is_dir()} | {p.stem for p in repo.glob("*.py")}
         third = third_party_imports(tests, own, root)
-        declared = _declared(repo)
-        missing = sorted(
-            m
-            for m in third - ALWAYS_OK
-            if norm(m) not in declared and norm(DIST_OF_MODULE.get(m, m)) not in declared
-        )
+        if installed is None:
+            declared = _declared(repo)
+            ok = lambda m: norm(m) in declared or norm(DIST_OF_MODULE.get(m, m)) in declared  # noqa: E731
+        else:
+            ok = lambda m: norm(m) in have_mods or norm(DIST_OF_MODULE.get(m, m)) in have_dists  # noqa: E731
+            gone = sorted(_runtime_requirements(repo) - have_dists)
+            if gone:
+                reasons.append(
+                    "runtime dependencies not installed in the sandbox: " + ", ".join(gone)
+                )
+        missing = sorted(m for m in third - ALWAYS_OK if not ok(m))
         if missing:
-            reasons.append(
-                "test imports not in the repo's runtime dependencies: " + ", ".join(missing)
+            where = (
+                "not installed in the sandbox"
+                if installed is not None
+                else "not in the repo's runtime dependencies"
             )
+            reasons.append(f"test imports {where}: " + ", ".join(missing))
         used, defined, markers, text = _fixtures_and_markers(tests)
+
+        def have_plugin(label: str) -> bool:
+            return installed is not None and norm(label.split()[0]) in have_dists
+
         for fx in sorted((used & set(PLUGIN_FIXTURES)) - defined):
-            reasons.append(f"fixture `{fx}` needs {PLUGIN_FIXTURES[fx]}")
+            if not have_plugin(PLUGIN_FIXTURES[fx]):
+                reasons.append(f"fixture `{fx}` needs {PLUGIN_FIXTURES[fx]}")
         for mk in sorted(markers & set(PLUGIN_MARKERS)):
-            reasons.append(f"marker `{mk}` needs {PLUGIN_MARKERS[mk]}")
+            if not have_plugin(PLUGIN_MARKERS[mk]):
+                reasons.append(f"marker `{mk}` needs {PLUGIN_MARKERS[mk]}")
         if NETWORK.search(text):
             reasons.append("tests use network calls or a network marker")
     return {"name": name, "admit": not reasons, "reasons": reasons, "third_party": sorted(third)}
@@ -252,6 +294,11 @@ def main(argv: list[str]) -> int:
     args = argv[1:]
     manifest, update = MANIFEST, "--update-manifest" in args
     args = [a for a in args if a != "--update-manifest"]
+    installed = None
+    if "--installed" in args:
+        i = args.index("--installed")
+        installed = load_installed(Path(args[i + 1]))
+        del args[i : i + 2]
     if "--manifest" in args:
         i = args.index("--manifest")
         manifest = Path(args[i + 1])
@@ -269,7 +316,7 @@ def main(argv: list[str]) -> int:
         e.update(
             {"modules": mods, "license": licence_of(repo), "package_dir": pkg, "tests_dir": tests}
         )
-        rows.append(check_repo(e["name"], repo, mods, tests))
+        rows.append(check_repo(e["name"], repo, mods, tests, installed))
     print(render_table(rows))
     if update:
         Path(manifest).write_text(json.dumps(entries, indent=1) + "\n", encoding="utf-8")
