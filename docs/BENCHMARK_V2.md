@@ -86,9 +86,9 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
 
 - Self-distillation first: sample E4B k times per task, keep resolved runs (and failure-then-recovery
   segments), split by repo.
-- Teacher traces (Claude or another hosted model) are gated on two checks I have not done: the competition
-  Rules tab on external models and data, and the provider's terms on training other models from its outputs.
-  Only synthetic, non-competition tasks ever go to a hosted API (rules 4b).
+- Teacher traces (Claude or another hosted model): allowed for this competition by the owner (A50, 2026-11-16),
+  for the Rules tab and the provider's terms. Only synthetic, non-competition tasks ever go to a hosted API
+  (rules 4b); real task text, patches and traces stay local.
 - A LoRA must be trained on the bf16 base and served on the w4a16 base; check the quality gap before relying on it.
 
 ## Slices and gates
