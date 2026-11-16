@@ -185,6 +185,17 @@ def _git(tree: Path, *args: str, stdin: str | None = None) -> str:
     return res.stdout.strip()
 
 
+def commit_tree(tree: Path, dest: Path) -> str:
+    """Commit `tree` as a fresh one-commit repo, tar it to `dest`, and return the commit."""
+    _git(tree, "init", "-q")
+    _git(tree, "add", "-A")
+    _git(tree, "commit", "-q", "-m", "base")
+    sha = _git(tree, "rev-parse", "HEAD")
+    with tarfile.open(dest, "w:gz") as tf:
+        tf.add(tree, arcname=".")
+    return sha
+
+
 def write_snapshot(repo: Path, rel_file: str, mutated: str, drop: list[str], dest: Path) -> str:
     """Write the task snapshot to `dest` and return its base commit (a fresh one-commit repo)."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -193,13 +204,7 @@ def write_snapshot(repo: Path, rel_file: str, mutated: str, drop: list[str], des
         (tree / rel_file).write_text(mutated, encoding="utf-8")
         for name in drop:
             (tree / name).unlink()
-        _git(tree, "init", "-q")
-        _git(tree, "add", "-A")
-        _git(tree, "commit", "-q", "-m", "base")
-        sha = _git(tree, "rev-parse", "HEAD")
-        with tarfile.open(dest, "w:gz") as tf:
-            tf.add(tree, arcname=".")
-    return sha
+        return commit_tree(tree, dest)
 
 
 def verify(task: dict, fail_to_pass: list[str], snapshot: Path, import_root: str, make_runner):

@@ -100,7 +100,7 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
 |---|---|---|
 | B0 Concurrency probe | tokens/s and timeouts at N = 1, 2, 4 on 12 existing dev tasks | Pick N with under 10% extra timeouts |
 | B1 Pool and S3 at scale | Readiness against the sandbox stack, 8+ repos, 300 mutant tasks | Realism checks pass (size gate fails for S3: see B1 result) |
-| B2 S1 miner | Real-commit tasks from the pool, verified twice in Docker | 100+ tasks, size histogram reported |
+| B2 S1 miner | Real-commit tasks from the pool, verified twice in Docker | 100+ tasks, size histogram reported (done: 162 tasks, distance 0.158) |
 | B3 Issue text | Model-written text with leak checks | BM25 and leak gates |
 | B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only |
 | B5 Training data | Self-distilled traces, repo-split | Needs B4 or accepted as training-only |
@@ -124,6 +124,32 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
   25% over 44; mutants put 100% in the first. Issue length matches (median 58 words) because the
   generator is templated, which says nothing about realism. S3 stays the cheap control; the middle and large
   bins have to come from S1.
+
+## B2 result (2026-11-16): real-commit tasks (S1)
+
+`python -m synthetic.mine HISTORY_DIR NAME [NAME ...] [--max-commits N] [--out DIR]` clones each repo with full
+history (only `git` runs on it), takes the newest single-parent commits that change both library and test
+`.py` files, builds a task from each (base = parent, `patch` = library part, `test_patch` = test part, issue
+= the commit message without PR numbers, links and trailers) and verifies it in the no-network container:
+the touched test files run twice on the parent plus the new tests and twice on the commit. A commit is kept
+when some test fails before and passes after, the same set both times.
+
+- **Yield.** 30 newest candidate commits per repo (all 16 for tomli; 15 for click) over 10 repos gave 162
+  verified tasks: click 10, cachetools 20, sqlparse 25, typer 20, markdown-it-py 8, mistune 28, toolz 12,
+  more-itertools 26, sortedcontainers 4, tomli 9. 162 of 271 candidates tried (60%) are usable. Where
+  commits are dropped: no fail-to-pass test (most often; markdown-it-py 20 of 30, sortedcontainers 21 of 30,
+  toolz 17 of 30), 14 with a patch outside 1 to 300 lines, one time-out, one deleted test file. The yield per repo
+  is limited by the test-only or docs-only commits, not by the sandbox's package versions.
+- **Realism (`python -m synthetic.realism`).** Gold lines median 10.5 (public 12), p25 5 (4), p90 75 (128);
+  hunks median 2 (2), files 1 (1); size bins 22/34/25/19% against 32/19/24/25% public. Histogram distance
+  0.158, against 0.68 for the mutants. The bins over 44 lines are filled from real commits but the tail
+  is shorter (p90 75 vs 128).
+- **Gaps.** Async: none of the 162 touch async code (public 9%). Issue text: commit messages have a median
+  of 9 words (public 58), so B3 must write the issue text; until then S1 tasks are not comparable on the
+  issue side. Tasks come from the 10 admitted repos only, and from the newest commits, so they use
+  APIs close to the pinned release.
+- **Not checked.** Behavioural fingerprint (slice B4), leak rate of function names in the commit messages,
+  and whether the miner's tasks resolve at a rate like the real ones.
 
 ## Open questions
 
