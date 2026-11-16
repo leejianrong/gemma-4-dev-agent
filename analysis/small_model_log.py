@@ -69,7 +69,9 @@ def parse(text: str) -> list[dict]:
             "edits": [],
             "tests": [],
             "no_submit": "without explicit submit_patch" in block,
+            "first_edit": None,  # 1-based index of the first edit_file call
         }
+        seen = 0
         for i, line in enumerate(lines):
             ev = EVENT.match(line)
             if not ev:
@@ -77,8 +79,10 @@ def parse(text: str) -> list[dict]:
             icon, rest = ev.groups()
             if icon in TOOLS:
                 t["tools"][TOOLS[icon]] += 1
+                seen += 1
                 tail = " ".join(lines[i + 1 : i + 8])
                 if icon == "✏️":
+                    t["first_edit"] = t["first_edit"] or seen
                     p = re.match(r"edit_file \((.*?)\)", rest)
                     t["edits"].append(p.group(1) if p else "")
                 if icon == "🔧" and "pytest" in rest + tail[:200]:
@@ -149,6 +153,11 @@ def summarize(tasks: list[dict], gold: dict[str, set[str]] | None = None) -> dic
         n,
     )
     out["edits_per_task_median"] = st.median(len(t["edits"]) for t in tasks)
+    first = [t["first_edit"] for t in tasks if t["first_edit"]]
+    out["first_edit_call_median"] = st.median(first) if first else None
+    out["tasks_never_editing"] = share(n - len(first), n)
+    refused = sum(v for k, v in errs.items() if k.startswith("edit:"))
+    out["edit_refusal_rate"] = share(refused, calls["edit_file"])
     if gold:
         hit = [t for t in tasks if set(t["edits"]) & gold.get(t["id"], set())]
         out["edited_a_gold_file"] = share(len(hit), n)
