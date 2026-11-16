@@ -470,8 +470,10 @@ is moot and a one-job group is enough. [guess, from the docs and PyPI metadata]
 
 - **Daemon:** `~/.config/systemd/user/pueued.service` runs `~/.cargo/bin/pueued` (WSL has systemd on). The
   default group runs one job at a time. [measured]
-- **Queue a run:** `python scripts/gpu_queue.py add RUN_ID BUNDLE MODEL [--seed N]` runs `pod/local_job.sh`:
-  wait for VRAM, build the kernel, run it in the container. The job label is `RUN_ID|MODEL|N_TASKS`.
+- **Queue a run:** `python scripts/gpu_queue.py add RUN_ID BUNDLE MODEL [--seed N] [--util U] [--concurrency N]` runs
+  `pod/local_job.sh`: wait for VRAM, build the kernel, run it in the container. The job label is
+  `RUN_ID|MODEL|N_TASKS`. `--concurrency` sets `EVAL_CONCURRENCY` (default 1); runs at different values are not
+  comparable, because the 480 s limit is wall clock (`docs/BENCHMARK_V2.md`, Throughput).
 - **`gpu_queue.py wait-vram`:** blocks until free VRAM covers `ER_VLLM_GPU_UTIL` of the card plus a 512 MiB
   margin. Nothing caps VRAM under WSL2, other processes take 1 to 5 GB, and a CUDA workload that drives free
   VRAM to zero is reported to crash the Windows host. [measured for the VRAM use; the crash is from an NVIDIA
