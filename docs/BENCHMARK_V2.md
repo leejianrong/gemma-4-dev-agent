@@ -101,7 +101,7 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
 | B0 Concurrency probe | tokens/s and timeouts at N = 1, 2, 4 on 12 existing dev tasks | Pick N with under 10% extra timeouts |
 | B1 Pool and S3 at scale | Readiness against the sandbox stack, 8+ repos, 300 mutant tasks | Realism checks pass (size gate fails for S3: see B1 result) |
 | B2 S1 miner | Real-commit tasks from the pool, verified twice in Docker | 100+ tasks, size histogram reported (done: 162 tasks, distance 0.158) |
-| B3 Issue text | Model-written text with leak checks | BM25 and leak gates |
+| B3 Issue text | Model-written text with leak checks | BM25 and leak gates (done: leak 16.7%, 61 words; BM25 not run) |
 | B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only |
 | B5 Training data | Self-distilled traces, repo-split | Needs B4 or accepted as training-only |
 
@@ -150,6 +150,26 @@ when some test fails before and passes after, the same set both times.
   APIs close to the pinned release.
 - **Not checked.** Behavioural fingerprint (slice B4), leak rate of function names in the commit messages,
   and whether the miner's tasks resolve at a rate like the real ones.
+
+## B3 result (2026-11-16): issue text for the mined tasks
+
+`python -m synthetic.issues requests|check|redo|apply` writes writer prompts from the commit message and
+the failing test's name (never the diff), checks each text and merges them. 31 of 162 tasks (a hash-chosen
+19%, target 20%) may name the changed function; for the rest the writer is told not to.
+The writer was Claude Sonnet, run as four subagents of 41 tasks. Only these synthetic tasks, built from
+public repos, were sent (A50; rules 4b still bars real tasks).
+
+- **First pass.** Median 61 words (public 58). 24 of 162 texts named the changed code against the rule
+  (15%); a second pass told the writer which words to avoid. After it 1 text was still flagged, and the
+  share of texts that name any changed identifier is 16.7% (public: near 20%).
+- **Checks.** 25 to 120 words, no code block or traceback, no file name, no changed function or class name
+  unless allowed. A common word that is also a class name (a `Parser` class, the word "parser") counts as a
+  leak, so the check errs on the strict side.
+- **Not run.** The BM25 hit@10 gate (public 55%, accept 45 to 65%), which needs gold nodes per task. The
+  texts have not been read by hand beyond the checks, and the writer sees the commit message, which may
+  carry details a real reporter would not know.
+- **Also found.** 33 of the 162 mined tasks share a base state with another one (9 groups: two commits on
+  one parent), so their graph file names collide. A run folder needs unique bases; B4 takes unique ones.
 
 ## Open questions
 
