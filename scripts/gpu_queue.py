@@ -1,6 +1,7 @@
 """Helpers around pueue for the local GPU (docs/GPU_RUNS.md section 16). Standard library only.
 
-    gpu_queue.py add RUN_ID BUNDLE MODEL [--seed N] [--util U]    queue one dev-subset run
+    gpu_queue.py add RUN_ID BUNDLE MODEL [--seed N] [--util U] [--concurrency N]
+                                                                     queue one dev-subset run
     gpu_queue.py eta                                                 queue with finish times
     gpu_queue.py wait-vram [--util 0.80] [--margin-mib 512]         block until the GPU has room
     gpu_queue.py sample CSV [--container NAME]                      log VRAM and server counters
@@ -47,12 +48,14 @@ def low_free(rows: list[dict], min_free_mib: int) -> int:
     return sum(1 for r in rows if int(r["total_mib"]) - int(r["used_mib"]) < min_free_mib)
 
 
-def job_env(environ: dict, util: float | None) -> dict:
+def job_env(environ: dict, util: float | None, concurrency: int | None = None) -> dict:
     """The environment pueue stores with a job: a few variables, never the caller's tokens."""
     env = {k: environ[k] for k in MINIMAL_ENV if k in environ}
     env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
     if util is not None:
         env["ER_VLLM_GPU_UTIL"] = str(util)
+    if concurrency is not None:  # read by kaggle/build_kernel.py when the job builds its kernel
+        env["EVAL_CONCURRENCY"] = str(concurrency)
     return env
 
 
@@ -225,7 +228,7 @@ def cmd_add(a: argparse.Namespace) -> int:
     n = a.tasks
     label = f"{a.run_id}|{a.model}|{n}"
     job = [str(ROOT / "pod" / "local_job.sh"), a.bundle, a.model, a.run_id, str(a.seed), str(n)]
-    env = job_env(dict(os.environ), a.util)
+    env = job_env(dict(os.environ), a.util, a.concurrency)
     cmd = ["pueue", "add", "--label", label, "--working-directory", str(ROOT), "--", *job]
     return subprocess.run(cmd, env=env).returncode
 
@@ -243,6 +246,7 @@ def main(argv: list[str]) -> int:
     add.add_argument("--seed", type=int, default=1)
     add.add_argument("--tasks", type=int, default=36, help="size of the dev subset (36)")
     add.add_argument("--util", type=float, help="vLLM share of VRAM for this job (default 0.80)")
+    add.add_argument("--concurrency", type=int, help="tasks run in parallel (default 1)")
     add.set_defaults(fn=cmd_add)
     sub.add_parser("eta").set_defaults(fn=cmd_eta)
     sm = sub.add_parser("sample")

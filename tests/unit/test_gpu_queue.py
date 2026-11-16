@@ -86,3 +86,8 @@ def test_job_env_keeps_a_few_variables_and_never_tokens():
     )
     assert env["ER_VLLM_GPU_UTIL"] == "0.8" and env["PATH"].endswith(":/usr/bin")
     assert "ER_VLLM_GPU_UTIL" not in gq.job_env({"PATH": "/usr/bin"}, None)
+
+
+def test_job_env_carries_eval_concurrency_only_when_asked():
+    assert gq.job_env({"PATH": "/usr/bin"}, None, 4)["EVAL_CONCURRENCY"] == "4"
+    assert "EVAL_CONCURRENCY" not in gq.job_env({"PATH": "/usr/bin"}, None)
