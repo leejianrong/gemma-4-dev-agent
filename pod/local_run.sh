@@ -49,7 +49,7 @@ in_container() {
     -e ER_VLLM_GPU_UTIL="${ER_VLLM_GPU_UTIL:-0.80}" \
     -v "$VENV:$VENV" -v "$py:$py:ro" \
     -v "$REPO/pod:/repo/pod:ro" -v "$REPO/kaggle/eval_kernel:/repo/kernel:ro" \
-    -v "$REPO/data/competition:/data:ro" -v "$WHEELS:$WHEELS:ro" -v "$W/models:$W/models:ro" \
+    -v "${LOCAL_DATA_DIR:-$REPO/data/competition}:/data:ro" -v "$WHEELS:$WHEELS:ro" -v "$W/models:$W/models:ro" \
     -v "$W/home:$W/home" -v "$W/out/$out:/out" \
     python:3.12 "$@"
 }

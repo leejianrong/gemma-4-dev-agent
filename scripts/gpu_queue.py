@@ -1,7 +1,7 @@
 """Helpers around pueue for the local GPU (docs/GPU_RUNS.md section 16). Standard library only.
 
     gpu_queue.py add RUN_ID BUNDLE MODEL [--seed N] [--util U] [--concurrency N]
-                                                                     queue one dev-subset run
+                     [--data-dir D --ids-file F]    queue one run (dev subset by default)
     gpu_queue.py eta                                                 queue with finish times
     gpu_queue.py wait-vram [--util 0.80] [--margin-mib 512]         block until the GPU has room
     gpu_queue.py sample CSV [--container NAME]                      log VRAM and server counters
@@ -48,7 +48,13 @@ def low_free(rows: list[dict], min_free_mib: int) -> int:
     return sum(1 for r in rows if int(r["total_mib"]) - int(r["used_mib"]) < min_free_mib)
 
 
-def job_env(environ: dict, util: float | None, concurrency: int | None = None) -> dict:
+def job_env(
+    environ: dict,
+    util: float | None,
+    concurrency: int | None = None,
+    data_dir: str | None = None,
+    ids_file: str | None = None,
+) -> dict:
     """The environment pueue stores with a job: a few variables, never the caller's tokens."""
     env = {k: environ[k] for k in MINIMAL_ENV if k in environ}
     env["PATH"] = f"{Path.home() / '.cargo/bin'}:{env.get('PATH', '')}"
@@ -56,6 +62,10 @@ def job_env(environ: dict, util: float | None, concurrency: int | None = None) -
         env["ER_VLLM_GPU_UTIL"] = str(util)
     if concurrency is not None:  # read by kaggle/build_kernel.py when the job builds its kernel
         env["EVAL_CONCURRENCY"] = str(concurrency)
+    if data_dir is not None:  # read by pod/local_run.sh: the folder mounted as the task data
+        env["LOCAL_DATA_DIR"] = data_dir
+    if ids_file is not None:  # read by pod/local_job.sh: JSON with an `ids` list, or a bare list
+        env["LOCAL_IDS_FILE"] = ids_file
     return env
 
 
@@ -228,7 +238,7 @@ def cmd_add(a: argparse.Namespace) -> int:
     n = a.tasks
     label = f"{a.run_id}|{a.model}|{n}"
     job = [str(ROOT / "pod" / "local_job.sh"), a.bundle, a.model, a.run_id, str(a.seed), str(n)]
-    env = job_env(dict(os.environ), a.util, a.concurrency)
+    env = job_env(dict(os.environ), a.util, a.concurrency, a.data_dir, a.ids_file)
     cmd = ["pueue", "add", "--label", label, "--working-directory", str(ROOT), "--", *job]
     return subprocess.run(cmd, env=env).returncode
 
@@ -247,6 +257,8 @@ def main(argv: list[str]) -> int:
     add.add_argument("--tasks", type=int, default=36, help="size of the dev subset (36)")
     add.add_argument("--util", type=float, help="vLLM share of VRAM for this job (default 0.80)")
     add.add_argument("--concurrency", type=int, help="tasks run in parallel (default 1)")
+    add.add_argument("--data-dir", help="task data folder (default data/competition)")
+    add.add_argument("--ids-file", help="JSON task ids to run (default data/dev_subset.json)")
     add.set_defaults(fn=cmd_add)
     sub.add_parser("eta").set_defaults(fn=cmd_eta)
     sm = sub.add_parser("sample")

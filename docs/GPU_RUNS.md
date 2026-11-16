@@ -474,6 +474,10 @@ is moot and a one-job group is enough. [guess, from the docs and PyPI metadata]
   `pod/local_job.sh`: wait for VRAM, build the kernel, run it in the container. The job label is
   `RUN_ID|MODEL|N_TASKS`. `--concurrency` sets `EVAL_CONCURRENCY` (default 1); runs at different values are not
   comparable, because the 480 s limit is wall clock (`docs/BENCHMARK_V2.md`, Throughput).
+  `--data-dir D --ids-file F` run other tasks (default `data/competition`, `data/dev_subset.json`): D holds
+  `tasks.jsonl`, `snapshots/`, `graphs/`, `embeddings/` (at least 100 graph and embedding files, the kernel's
+  `MIN_FILES`); F is JSON with an `ids` list or a bare list. Mined and mutant tasks use this
+  (`python -m synthetic.mine graphs DIR` adds the graphs to a mined folder).
 - **`gpu_queue.py wait-vram`:** blocks until free VRAM covers `ER_VLLM_GPU_UTIL` of the card plus a 512 MiB
   margin. Nothing caps VRAM under WSL2, other processes take 1 to 5 GB, and a CUDA workload that drives free
   VRAM to zero is reported to crash the Windows host. [measured for the VRAM use; the crash is from an NVIDIA
