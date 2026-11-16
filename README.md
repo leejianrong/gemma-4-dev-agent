@@ -30,6 +30,7 @@ flowchart LR
 | Run-a-test prompt | 15 of 36, one replicate: the agent ignored the instruction |
 | Small models, baseline prompt | E4B 5 of 36, E2B 6 of 36, one replicate each, about 0.5 USD each |
 | Small models, v2 prompt | E4B 8 of 36, E2B 5 of 36, one replicate each: inside the noise (A46) |
+| E4B thinking budget 4096, 1024, 0 | 5, 6, 5 of 36, but edit calls refused 20%, 52%, 58%: keep 4096 (A49) |
 | What separates solved tasks | gold-patch size (median 5 lines solved, 22 never solved), not where the agent looks |
 
 ## Quick start
@@ -59,7 +60,7 @@ No GPU is needed to edit, package or analyse. To run the agent on tasks you need
 | Colab T4 | free | not tried; reference in `docs/reference/colab/` |
 
 The recipe, prices and pitfalls are in [`docs/GPU_RUNS.md`](docs/GPU_RUNS.md). The RunPod spend cap
-is 10 USD in total and the credit is exhausted; Kaggle quota is spent until it resets. Model runs use the local GPU (`pod/local_run.sh`).
+is 10 USD in total and the credit is exhausted; Kaggle quota is spent until it resets. Model runs use the local 16 GB GPU, one job at a time through a pueue queue (`python scripts/gpu_queue.py add|eta`, section 16 of that file).
 
 ## Taking over on a new machine
 
@@ -75,7 +76,7 @@ state that lives outside git (RunPod balance, board, open requests).
 | `experiments/` | run log (`runs.csv`), `bundles/` (one folder per arm), the localizer skill, probe bundles |
 | `analysis/` | analysis scripts: failure classes, task features, trace review, dev subset |
 | `pod/`, `kaggle/` | the pod GPU job and the Kaggle eval-runner kernel builder |
-| `synthetic/` | synthetic task generator: mutation, graphs, embeddings, export |
+| `synthetic/` | benchmark v2 task generator: mutation, mining real commits, issue texts, graphs, embeddings ([`docs/BENCHMARK_V2.md`](docs/BENCHMARK_V2.md)) |
 | `docs/` | competition notes, plans, GPU recipe, failure analysis, decisions (`adr/`), `reference/`, `research/` (literature, trace analyses, LoRA plan), `LOCAL_STATE.md` (what is not in git) |
 
 ## Contributing

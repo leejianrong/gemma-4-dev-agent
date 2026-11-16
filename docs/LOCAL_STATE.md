@@ -67,6 +67,9 @@ pod's Python is not Kaggle's image (keep the env gate on every GPU job).
 ## Where the work stands
 
 See `docs/research/README.md` ("Where we stood") and `docs/research/tasks.md` for the open list.
-Short version: no GPU quota left; `e4b_v3` and `e2b_v3` have no run row yet; the LoRA plan
-(`docs/research/lora-pod-plan.md`) is stopped at stage 1 because the training set is 52 runs over 16
-fastapi tasks.
+Short version: no Kaggle GPU quota left and no RunPod credit; model runs use the local GPU through pueue. The LoRA plan
+(`docs/research/lora-pod-plan.md`) is stopped at stage 1 because the training set is 52 runs over 16 fastapi tasks.
+
+Benchmark v2 data lives outside git in `~/gpu-work` (repo clones `synth-cache`, mined and mutant tasks `s1-*`,
+`synth-b1`, issue texts `b3`, the B4 data folder `b4-data`, run outputs `out/<run_id>`). It holds task data under
+rules 4b: never commit or upload it. Regenerate with `python -m synthetic.mine` and `docs/BENCHMARK_V2.md`.
