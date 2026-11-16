@@ -1,0 +1,47 @@
+aiofiles aiofiles
+annotated_doc annotated_doc
+annotated_types annotated_types
+anyio anyio
+blinker blinker
+certifi certifi
+charset_normalizer charset_normalizer
+click click
+dnspython dns
+email_validator email_validator
+fastapi fastapi
+flask flask
+greenlet greenlet
+h11 h11
+httpcore httpcore
+httpx httpx
+idna idna
+iniconfig iniconfig
+itsdangerous itsdangerous
+jinja2 jinja2
+markdown_it_py markdown_it
+markupsafe markupsafe
+mdurl mdurl
+orjson orjson
+packaging packaging
+pip pip
+pluggy pluggy
+pydantic pydantic
+pydantic_core pydantic_core
+pygments pygments
+pyjwt jwt
+pytest _pytest py pytest
+python_dotenv dotenv
+python_multipart multipart python_multipart
+pyyaml _yaml yaml
+requests requests
+rich rich
+shellingham shellingham
+sqlalchemy sqlalchemy
+starlette starlette
+typer typer
+typing_extensions __pycache__ typing_extensions
+typing_inspection typing_inspection
+ujson ujson ujson-stubs
+urllib3 urllib3
+uvicorn uvicorn
+werkzeug werkzeug

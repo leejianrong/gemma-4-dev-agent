@@ -50,6 +50,10 @@ declared runtime dependency is assumed to be present and any test-only dependenc
 missing. Some rejections are cautious: flask builds modules at test time, and toolz imports
 `annotationlib`, which exists only in Python 3.14.
 
+**Update 2026-11-16.** `--installed synthetic/sandbox_modules.txt` replaces the stdlib-only assumption with the
+modules the competition's test stack has installed (`docker/synthetic/requirements.txt`): 10 repos admitted
+(toolz is new, and ran fine in the image). Result and realism numbers: `docs/BENCHMARK_V2.md`, B1 result.
+
 ## Bug injection
 
 1. **Mutate.** Parse each library file with `ast` and apply one operator at a time: swap a

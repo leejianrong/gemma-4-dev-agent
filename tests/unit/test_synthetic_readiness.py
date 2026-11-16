@@ -141,3 +141,33 @@ def test_optional_imports_and_uncollected_files_are_not_counted(tmp_path):
         },
     )
     assert third_party_imports(repo / "tests", {"mylib"}) == set()
+
+
+SANDBOX = {"pyyaml": {"yaml"}, "anyio": {"anyio"}, "markupsafe": {"markupsafe"}}
+
+
+def test_a_test_import_the_sandbox_has_installed_is_admitted(tmp_path):
+    repo = make_repo(tmp_path, {"test_a.py": "import yaml\nimport mylib\n"})
+    assert check_repo("mylib", repo, "mylib", "tests", SANDBOX)["admit"] is True
+    row = check_repo("mylib", repo, "mylib", "tests", {"anyio": {"anyio"}})
+    assert row["admit"] is False and any("yaml" in r for r in row["reasons"])
+
+
+def test_a_declared_dependency_must_be_installed_when_a_sandbox_list_is_given(tmp_path):
+    repo = make_repo(
+        tmp_path,
+        {"test_a.py": "import mylib\n"},
+        pyproject='[project]\nname = "mylib"\ndependencies = ["mdurl>=0.1", "MarkupSafe"]\n',
+    )
+    row = check_repo("mylib", repo, "mylib", "tests", SANDBOX)
+    assert row["admit"] is False
+    assert any("mdurl" in r and "not installed" in r for r in row["reasons"])
+    assert not any("markupsafe" in r.lower() for r in row["reasons"])
+
+
+def test_a_plugin_marker_is_fine_when_its_plugin_is_installed(tmp_path):
+    repo = make_repo(
+        tmp_path, {"test_a.py": "import pytest\n@pytest.mark.anyio\ndef test_x(): pass\n"}
+    )
+    assert check_repo("mylib", repo, "mylib", "tests", SANDBOX)["admit"] is True
+    assert check_repo("mylib", repo, "mylib", "tests", {"x": {"x"}})["admit"] is False
