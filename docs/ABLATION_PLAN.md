@@ -55,7 +55,7 @@ variants cheaply there, run only finalists here.
 | A10 | E4B v2 plus: edit_file once, then replace by line number with a short Python script (no more string copying) (`e4b_v3`; parent `e4b_v2`) | prompt | GEM-36 |
 | A11 | E2B v2 plus the same line-number edit recipe (`e2b_v3`; parent `e2b_v2`) | prompt | GEM-36 |
 | A12 | E4B v2 plus an `edit` skill script (whitespace-tolerant block edit, parse check, prints the result) instead of `edit_file` (`e4b_edit1`, `experiments/skills/edit`). Judge by edit-refusal rate and first-edit call | skill | GEM-36 |
-| A13 | E4B v2 with `thinking_budget` 0 (`e4b_think0`) and 1024 (`e4b_think1k`) against 4096 | thinking | GEM-15 |
+| A13 | E4B v2 with `thinking_budget` 0 (`e4b_think0`) and 1024 (`e4b_think1k`) against 4096 (run 2026-11-16, no gain, more edit refusals: A49) | thinking | GEM-15 |
 | A2 | Localizer skill, one call returns top 10 | skill | GEM-80, 82 |
 | A3 | A2 plus co-change suggestions | skill | GEM-81 |
 | B1 | Tool-call limit 28 vs 40 | limits | GEM-14 |
