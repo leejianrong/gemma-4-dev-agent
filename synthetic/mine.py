@@ -5,7 +5,8 @@ and pass on the commit, is a task: base = the parent, `patch` = the library part
 the test part, issue text = the commit message with links and trailers removed (never the diff).
 Git only reads history; the tests run in the same no-network container as the other stages
 (synthetic/run_tests.py). Output is a tasks.jsonl in the competition's layout plus snapshots.
-Usage: python -m synthetic.mine CACHE_DIR NAME [NAME ...] [--max-commits N] [--out DIR]
+Usage: python -m synthetic.mine HISTORY_DIR NAME [NAME ...] [--max-commits N] [--out DIR]
+       python -m synthetic.mine graphs DIR     add graphs/ and embeddings/ to a mined DIR
 """
 
 from __future__ import annotations
@@ -21,8 +22,9 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
-from synthetic.export import CREATED_AT
+from synthetic.export import CREATED_AT, write_graph
 from synthetic.fetch import load_manifest
+from synthetic.graph import read_tree
 from synthetic.realism import summarize
 from synthetic.run_tests import Run, docker_runner
 from synthetic.tasks import GIT, commit_tree, git_env
@@ -224,7 +226,30 @@ def mine_repo(entry: dict, clone: Path, limit: int, out: Path, timeout: int = 12
     }
 
 
+def export_graphs(out: Path, tasks: list[dict], entries: dict[str, dict]) -> int:
+    """Write graphs/ and embeddings/ for each task from its snapshot (the competition layout)."""
+    for sub in ("graphs", "embeddings"):
+        (out / sub).mkdir(exist_ok=True)
+    for t in tasks:
+        name = t["repo"].split("/", 1)[1]
+        root = str(Path(entries[name]["package_dir"]).parent)
+        with tempfile.TemporaryDirectory() as tmp:
+            with tarfile.open(out / "snapshots" / f"{t['instance_id']}.tgz") as tf:
+                tf.extractall(tmp, filter="data")
+            files = read_tree(Path(tmp) / root)
+        write_graph(out, name, t["base_commit"], files)
+    return len(tasks)
+
+
 def main(argv: list[str]) -> int:
+    if argv[:1] == [
+        "graphs"
+    ]:  # python -m synthetic.mine graphs DIR: DIR has tasks.jsonl, snapshots/
+        out = Path(argv[1])
+        rows = [json.loads(ln) for ln in (out / "tasks.jsonl").read_text().splitlines() if ln]
+        entries = {e["name"]: e for e in load_manifest()}
+        print(f"graphs and embeddings for {export_graphs(out, rows, entries)} tasks")
+        return 0
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("history", type=Path, help="folder for full-history clones")
     ap.add_argument("names", nargs="+")

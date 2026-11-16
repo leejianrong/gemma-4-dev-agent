@@ -133,3 +133,23 @@ def test_classify_files_keeps_tests_inside_the_package_out_of_the_library_part()
     got = classify_files(["lib/a.py", "lib/tests/test_a.py"], "lib", "lib/tests")
     assert got == (["lib/a.py"], ["lib/tests/test_a.py"])
     assert classify_files(["lib/tests/test_a.py"], "lib", "lib/tests") is None
+
+
+def test_export_graphs_writes_a_graph_and_embeddings_per_mined_task(tmp_path):
+    import tarfile
+
+    from synthetic.mine import export_graphs
+    from synthetic.tasks import commit_tree
+
+    tree = tmp_path / "tree"
+    (tree / "lib").mkdir(parents=True)
+    (tree / "lib" / "a.py").write_text("def f(x):\n    return g(x)\n\n\ndef g(x):\n    return x\n")
+    out = tmp_path / "out"
+    (out / "snapshots").mkdir(parents=True)
+    base = commit_tree(tree, out / "snapshots" / "demo__abc.tgz")
+    task = {"instance_id": "demo__abc", "repo": "synthetic/demo", "base_commit": base}
+    entries = {"demo": {"name": "demo", "package_dir": "lib"}}
+    assert export_graphs(out, [task], entries) == 1
+    assert (out / "graphs" / f"demo_{base}.json").is_file()
+    assert (out / "embeddings" / f"demo_{base}.npz").is_file()
+    assert tarfile.is_tarfile(out / "snapshots" / "demo__abc.tgz")

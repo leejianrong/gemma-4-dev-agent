@@ -91,3 +91,10 @@ def test_job_env_keeps_a_few_variables_and_never_tokens():
 def test_job_env_carries_eval_concurrency_only_when_asked():
     assert gq.job_env({"PATH": "/usr/bin"}, None, 4)["EVAL_CONCURRENCY"] == "4"
     assert "EVAL_CONCURRENCY" not in gq.job_env({"PATH": "/usr/bin"}, None)
+
+
+def test_job_env_carries_a_data_dir_and_an_ids_file_only_when_asked():
+    env = gq.job_env({"PATH": "/usr/bin"}, None, None, "/d", "/i.json")
+    assert env["LOCAL_DATA_DIR"] == "/d" and env["LOCAL_IDS_FILE"] == "/i.json"
+    plain = gq.job_env({"PATH": "/usr/bin"}, None)
+    assert "LOCAL_DATA_DIR" not in plain and "LOCAL_IDS_FILE" not in plain
