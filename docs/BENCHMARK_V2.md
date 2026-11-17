@@ -102,7 +102,7 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
 | B1 Pool and S3 at scale | Readiness against the sandbox stack, 8+ repos, 300 mutant tasks | Realism checks pass (size gate fails for S3: see B1 result) |
 | B2 S1 miner | Real-commit tasks from the pool, verified twice in Docker | 100+ tasks, size histogram reported (done: 162 tasks, distance 0.158) |
 | B3 Issue text | Model-written text with leak checks | BM25 and leak gates (done: leak 16.7%, 61 words; BM25 not run) |
-| B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only (S1 fingerprint done; gate fails 35 of 100, open) |
+| B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only (S1 fingerprint done; gate fixed, 98 of 100 pass; S1 rerun and S3 run open) |
 | B5 Training data | Self-distilled traces, repo-split | Needs B4 or accepted as training-only |
 
 ## B1 result (2026-11-16): pool and operator mutants
@@ -191,11 +191,16 @@ The band proposed beforehand (within 30% of the real-dev value) is useless on re
 same bundle on real tasks differ by 30 points. Calls and first edit fall inside the real-dev range. Time-outs and
 test use are better on S1, so the tasks are somewhat easier to work on, not harder. [measured]
 
-**Validity is not shown.** The gold-patch gate (`pod/env_check.py`) failed for 35 of the 100 B4 tasks (20 of 50 S1,
-15 of 50 S3), in click, tomli, markdown-it-py, cachetools and typer. One traceback runs through the installed
-`click` in the sandbox venv, so a likely cause is the installed package shadowing the repo's own copy during the
-check. Not confirmed, and not yet tested whether the agent's own test runs hit the same problem. Until then the
-2 of 50 resolved is not a measure of anything, and the S3 B4 run was not made. B4 stays open.
+**Validity: the gate was wrong, not the tasks (2026-11-17).** `pod/env_check.py` failed 35 of the 100 B4 tasks
+for two reasons of its own. It put only the snapshot root on the import path, so `src`-layout repos (click, tomli,
+cachetools, mistune) imported the installed package instead of the task's code. And it failed on any test that
+also fails at the base state (a missing optional package in markdown-it-py, version differences in typer). It now
+adds `src` and compares against the base state plus the test patch: a task passes if the gold patch adds no new
+failure and fixes at least one test. With that, 98 of 100 pass. `typer__fd4241fd15` and `mistune__6237361d1a` fail
+with new failures under the gold patch and are dropped from B4. [measured]
+
+Not known: whether the local run's own grader has the same import flaw. If it does, the 2 of 50 resolved in the S1
+run understates resolution for `src`-layout repos. A rerun would show it. The S3 B4 run was not made.
 
 ## Open questions
 
