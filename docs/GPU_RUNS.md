@@ -485,6 +485,10 @@ is moot and a one-job group is enough. [guess, from the docs and PyPI metadata]
 - **`gpu_queue.py eta`:** each unfinished job's start and finish time: the median `minutes_per_task` of past
   runs of that model in `experiments/runs.csv` times the task count, chained through the queue. A running job
   past its estimate counts as ending now. Only a rough guide (E4B 2.4 to 3.3 min per task so far).
+- **Do not lower `--util` below 0.80 for E4B.** At 0.75 vLLM needs 0.6 GiB of KV cache and has 0.4, so the run dies
+  within minutes (2026-11-16, two jobs lost). [measured] Run on mains power with sleep off: a suspend counts against
+  the 480 s wall-clock limit, turns tasks into false time-outs and leaves a gap in `gpu_samples.csv` (2026-11-17,
+  a run was discarded). Check both before trusting a run.
 - **Pitfalls:** pueue stores the whole environment of the shell that adds a job, so `add` passes a minimal one
   (no tokens). Do not auto-restart failed jobs from an agent (a third-party report describes a queue growing from
   60 to about 12,800 jobs). Queue jobs only when nothing else builds `kaggle/eval_kernel/kernel.py` or uses the GPU.
