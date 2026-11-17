@@ -8,6 +8,7 @@ Usage: python3 env_check.py DATA ID[,ID...]
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -22,34 +23,69 @@ def test_files(test_patch: str) -> list[str]:
     return [p for p in paths if p.endswith(".py") and "test" in Path(p).name]
 
 
+def _apply(ws: Path, tmp: Path, task: dict, name: str) -> str | None:
+    """Apply one stored diff to the workspace; return an error text or None."""
+    diff = tmp / f"{name}.diff"
+    diff.write_text(task[name].rstrip("\n") + "\n")  # stored without one
+    res = subprocess.run(["git", "apply", str(diff)], cwd=ws, capture_output=True, text=True)
+    return f"git apply {name} failed: {res.stderr[-300:]}" if res.returncode else None
+
+
+def _failed(output: str) -> set[str]:
+    """Ids on the FAILED and ERROR lines of pytest's short summary."""
+    return {
+        line.split(None, 1)[1].split(" - ", 1)[0].strip()
+        for line in output.splitlines()
+        if line.startswith(("FAILED ", "ERROR "))
+    }
+
+
+def _run_tests(ws: Path, tmp: Path, files: list[str], timeout: int) -> tuple[set[str], str] | str:
+    """Run the touched tests; return (failed ids, output tail) or a timeout message."""
+    cmd = [sys.executable, "-m", "pytest", *files, "-q", "-p", "no:cacheprovider", "-rfE"]
+    # src-layout repos import from ws/src; with only ws on the path the installed copy wins
+    roots = [str(ws)] + ([str(ws / "src")] if (ws / "src").is_dir() else [])
+    env = {
+        "PATH": "/usr/bin:/bin:/usr/local/bin",
+        "PYTHONPATH": os.pathsep.join(roots),
+        "HOME": str(tmp),
+    }
+    try:
+        res = subprocess.run(cmd, cwd=ws, env=env, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return f"tests timed out after {timeout}s"
+    out = res.stdout + res.stderr
+    return _failed(out), out[-400:]
+
+
 def check(task: dict, snapshot: Path, timeout: int = 240) -> tuple[bool, str]:
-    """Unpack the snapshot, apply the gold and test patches, run the touched tests."""
-    with tempfile.TemporaryDirectory() as tmp:
-        ws = Path(tmp) / "ws"
+    """The gold patch must fix the touched tests: no failure it adds, at least one it removes.
+
+    Compared with the base state plus the test patch, so a test that fails for an unrelated
+    reason (a missing optional package) does not fail the gate.
+    """
+    with tempfile.TemporaryDirectory() as t:
+        tmp = Path(t)
+        ws = tmp / "ws"
         ws.mkdir()
         with tarfile.open(snapshot) as tf:
             tf.extractall(ws, filter="data")
-        for name in ("patch", "test_patch"):
-            (Path(tmp) / f"{name}.diff").write_text(
-                task[name].rstrip("\n") + "\n"
-            )  # stored without one
-            res = subprocess.run(
-                ["git", "apply", str(Path(tmp) / f"{name}.diff")],
-                cwd=ws,
-                capture_output=True,
-                text=True,
-            )
-            if res.returncode:
-                return False, f"git apply {name} failed: {res.stderr[-300:]}"
-        cmd = [sys.executable, "-m", "pytest", *test_files(task["test_patch"]), "-q", "-x"]
-        env = {"PATH": "/usr/bin:/bin:/usr/local/bin", "PYTHONPATH": str(ws), "HOME": tmp}
-        try:
-            res = subprocess.run(
-                cmd, cwd=ws, env=env, capture_output=True, text=True, timeout=timeout
-            )
-        except subprocess.TimeoutExpired:
-            return False, f"tests timed out after {timeout}s"
-        return res.returncode == 0, (res.stdout + res.stderr)[-400:]
+        files = test_files(task["test_patch"])
+        if err := _apply(ws, tmp, task, "test_patch"):
+            return False, err
+        before = _run_tests(ws, tmp, files, timeout)
+        if isinstance(before, str):
+            return False, before
+        if err := _apply(ws, tmp, task, "patch"):
+            return False, err
+        after = _run_tests(ws, tmp, files, timeout)
+        if isinstance(after, str):
+            return False, after
+        new, fixed = after[0] - before[0], before[0] - after[0]
+        if new or not fixed:
+            why = f"{len(new)} new failures" if new else "no test changed from failing to passing"
+            return False, why + "\n" + after[1]
+        return True, after[1]
 
 
 def main(argv: list[str]) -> int:
