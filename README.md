@@ -29,7 +29,7 @@ flowchart LR
 | Localizer skill in the agent | 14 and 14 of 36: no effect detected |
 | Run-a-test prompt | 15 of 36, one replicate: the agent ignored the instruction |
 | Small models, baseline prompt | E4B 5 of 36, E2B 6 of 36, one replicate each, about 0.5 USD each |
-| Small models, v2 prompt | E4B 8 of 36, E2B 5 of 36, one replicate each: inside the noise (A46) |
+| Small models, v2 prompt | E4B 8 of 36, E2B 5 of 36, one replicate each: inside the noise (A46); E4B v2 public score 0.06 (A57) |
 | E4B thinking budget 4096, 1024, 0 | 5, 6, 5 of 36, but edit calls refused 20%, 52%, 58%: keep 4096 (A49) |
 | What separates solved tasks | gold-patch size (median 5 lines solved, 22 never solved), not where the agent looks |
 
