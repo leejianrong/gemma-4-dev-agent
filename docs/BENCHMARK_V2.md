@@ -102,7 +102,7 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
 | B1 Pool and S3 at scale | Readiness against the sandbox stack, 8+ repos, 300 mutant tasks | Realism checks pass (size gate fails for S3: see B1 result) |
 | B2 S1 miner | Real-commit tasks from the pool, verified twice in Docker | 100+ tasks, size histogram reported (done: 162 tasks, distance 0.158) |
 | B3 Issue text | Model-written text with leak checks | BM25 and leak gates (done: leak 16.7%, 61 words; BM25 not run) |
-| B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only (S1 fingerprint done; gate fixed, 98 of 100 pass; S1 rerun and S3 run open) |
+| B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only (S1 fingerprint done; gate fixed, 98 of 100 pass; resolution only valid for flat-layout repos, A59) |
 | B5 Training data | Self-distilled traces, repo-split | Needs B4 or accepted as training-only |
 
 ## B1 result (2026-11-16): pool and operator mutants
@@ -199,8 +199,12 @@ adds `src` and compares against the base state plus the test patch: a task passe
 failure and fixes at least one test. With that, 98 of 100 pass. `typer__fd4241fd15` and `mistune__6237361d1a` fail
 with new failures under the gold patch and are dropped from B4. [measured]
 
-Not known: whether the local run's own grader has the same import flaw. If it does, the 2 of 50 resolved in the S1
-run understates resolution for `src`-layout repos. A rerun would show it. The S3 B4 run was not made.
+**The local grader has the same flaw (A59).** The rerun on the 48 passing S1 tasks resolved 3: 3 of 28 in flat-layout
+repos, 0 of 20 in `src`-layout repos. `swegemma`'s subprocess sandbox sets `PYTHONPATH` to the workspace root only, and
+the sandbox stack has the repos' packages installed, so a `src`-layout repo's tests import the installed copy.
+[guess from reading the wheel; the count is suggestive] Until the harness changes, judge resolution on flat-layout
+repos (markdown-it-py, more-itertools, sortedcontainers, sqlparse, toolz, typer) and use `src`-layout tasks for log
+signals only. Whether Kaggle's own grader does the same is not known.
 
 ## Open questions
 
