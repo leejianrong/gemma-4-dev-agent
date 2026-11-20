@@ -489,8 +489,6 @@ is moot and a one-job group is enough. [guess, from the docs and PyPI metadata]
   within minutes (2026-11-16, two jobs lost). [measured] Run on mains power with sleep off: a suspend counts against
   the 480 s wall-clock limit, turns tasks into false time-outs and leaves a gap in `gpu_samples.csv` (2026-11-17,
   a run was discarded). Check both before trusting a run.
-- **`src`-layout repos do not resolve locally.** The subprocess sandbox sets `PYTHONPATH` to the workspace root only,
-  so tests import the installed package, not the edited code (A59). Use flat-layout tasks to judge resolution.
 - **Pitfalls:** pueue stores the whole environment of the shell that adds a job, so `add` passes a minimal one
   (no tokens). Do not auto-restart failed jobs from an agent (a third-party report describes a queue growing from
   60 to about 12,800 jobs). Queue jobs only when nothing else builds `kaggle/eval_kernel/kernel.py` or uses the GPU.

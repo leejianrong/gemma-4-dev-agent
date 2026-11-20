@@ -14,7 +14,7 @@ tag every number), plan `docs/PLAN.md`, arms `docs/ABLATION_PLAN.md`, decisions 
   36 dev tasks resolves 13 and 15. Skill, run-a-test prompt: no effect (A40, A41). Small models: E4B 5,
   E2B 6 of 36 (A43); v2 prompts E4B 8, E2B 5 (A46); thinking budget 4096 stays (A49); `e4b_edit2` fewer edit failures but same resolution (A58); refusal rates vary 20-50% run to run (A54); E4B v2 public 0.06 (A57). Active: small-model tuning
   (GEM-36) and benchmark v2, a larger synthetic task set because 36 tasks cannot see gains under about 11 points
-  (`docs/BENCHMARK_V2.md`, A51-A59; B4: gate fixed; the local subprocess sandbox probably cannot grade `src`-layout repos, so judge resolution on flat-layout ones, A59). Kaggle GPU quota is spent. Research
+  (`docs/BENCHMARK_V2.md`, A51-A60; B4 done: S1 6%, S3 26% resolved, `src` layout is fine, A59-A60). Kaggle GPU quota is spent. Research
   notes: `docs/research/`. LoRA and teacher traces: owner approved for this competition (A50); real task text never
   goes to a hosted API; adapters ship privately (`docs/research/lora-pod-plan.md`).
 - Board: pandan, GEM = board 45. `pandan comment add CARD --body "..."` needs `--body`; `pandan move`

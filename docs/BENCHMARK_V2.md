@@ -102,7 +102,7 @@ reading tokens per second, timeouts and VRAM (`gpu_samples.csv`, `SUSPECT_VRAM`)
 | B1 Pool and S3 at scale | Readiness against the sandbox stack, 8+ repos, 300 mutant tasks | Realism checks pass (size gate fails for S3: see B1 result) |
 | B2 S1 miner | Real-commit tasks from the pool, verified twice in Docker | 100+ tasks, size histogram reported (done: 162 tasks, distance 0.158) |
 | B3 Issue text | Model-written text with leak checks | BM25 and leak gates (done: leak 16.7%, 61 words; BM25 not run) |
-| B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only (S1 fingerprint done; gate fixed, 98 of 100 pass; resolution only valid for flat-layout repos, A59) |
+| B4 Validity | Fingerprint, ladder, replicate agreement | Pass or declare training-only (S1 fingerprint done; gate fixed, 98 of 100 pass; S1 rerun and S3 run done, A59 and A60) |
 | B5 Training data | Self-distilled traces, repo-split | Needs B4 or accepted as training-only |
 
 ## B1 result (2026-11-16): pool and operator mutants
@@ -199,12 +199,14 @@ adds `src` and compares against the base state plus the test patch: a task passe
 failure and fixes at least one test. With that, 98 of 100 pass. `typer__fd4241fd15` and `mistune__6237361d1a` fail
 with new failures under the gold patch and are dropped from B4. [measured]
 
-**The local grader has the same flaw (A59).** The rerun on the 48 passing S1 tasks resolved 3: 3 of 28 in flat-layout
-repos, 0 of 20 in `src`-layout repos. `swegemma`'s subprocess sandbox sets `PYTHONPATH` to the workspace root only, and
-the sandbox stack has the repos' packages installed, so a `src`-layout repo's tests import the installed copy.
-[guess from reading the wheel; the count is suggestive] Until the harness changes, judge resolution on flat-layout
-repos (markdown-it-py, more-itertools, sortedcontainers, sqlparse, toolz, typer) and use `src`-layout tasks for log
-signals only. Whether Kaggle's own grader does the same is not known.
+**`src` layout and the grader (A59, corrected).** The S1 rerun on the 48 passing tasks resolved 3: 3 of 28 in
+flat-layout repos, 0 of 20 in `src`-layout repos. That and a reading of the subprocess sandbox (`PYTHONPATH` is the
+workspace root only) suggested `src` tasks cannot resolve. The S3 run disproved it: 8 of 23 `src`-layout tasks
+resolved (35%), 5 of 27 flat. So no layout restriction is needed; the S1 zero is chance or harder commits. [measured]
+
+**S3 fingerprint (A60).** 13 of 50 resolved (26%); refusal 26%, median calls 10, first edit at call 6, 92% ran a test.
+S3 sits above the real-dev rate (about 14%) and S1 below it (6%). Both are usable for log signals; resolution on
+either needs the hidden tasks to be like them, which is not shown.
 
 ## Open questions
 
