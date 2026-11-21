@@ -419,6 +419,26 @@ def er_dtype(major: int, bf16: bool, override: str | None) -> str:
     return "bfloat16" if bf16 else "auto"
 
 
+def er_with_src_path(extra_env: dict) -> dict:
+    """The subprocess sandbox sets PYTHONPATH to the workspace only and skips the editable install
+    the Docker sandbox does, so a `src`-layout repo cannot be imported (A61). Add `src`."""
+    ws = extra_env.get("PYTHONPATH")
+    if ws and (Path(ws) / "src").is_dir():
+        return {**extra_env, "PYTHONPATH": f"{ws}:{ws}/src"}
+    return extra_env
+
+
+def er_patch_src_layout() -> None:
+    import swegemma.sandbox.subprocess as sp
+
+    orig = sp.build_sanitized_env
+
+    def build(*args, extra_env=None, **kw):
+        return orig(*args, extra_env=er_with_src_path(dict(extra_env or {})), **kw)
+
+    sp.build_sanitized_env = build
+
+
 class ErExternalServer:
     """An OpenAI-compatible endpoint that is not ours to start (ER_EXTERNAL_API_BASE), for example
     semula answering with a teacher model. Same three members the runner uses from VllmServer."""
@@ -507,6 +527,8 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
     from swegemma.models import load_tasks
 
     litellm.drop_params = True
+    if os.environ.get("ER_SRC_LAYOUT") == "1":
+        er_patch_src_layout()
     er_log(f"STAGE prepare-submission (t+{time.time() - t0:.0f}s)")
     agent_dir, model = er_write_submission(outd / "our_submission", files, p["model"])
     p = {**p, "model": model}

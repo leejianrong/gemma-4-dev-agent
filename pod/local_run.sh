@@ -51,6 +51,7 @@ in_container() {
     -e PATH="$VENV/bin:/usr/local/bin:/usr/bin:/bin" \
     -e DATA_DIR=/data -e OUT_DIR=/out -e ER_WHEELHOUSE_DIR="$WHEELS" -e ER_MODEL_ROOT_DIR="$W/models" \
     -e ER_VLLM_GPU_UTIL="${ER_VLLM_GPU_UTIL:-0.80}" -e ER_EXTERNAL_API_BASE="${ER_EXTERNAL_API_BASE:-}" \
+    -e ER_SRC_LAYOUT="${ER_SRC_LAYOUT:-1}" \
     -v "$VENV:$VENV" -v "$py:$py:ro" \
     -v "$REPO/pod:/repo/pod:ro" -v "$REPO/kaggle/eval_kernel:/repo/kernel:ro" \
     -v "${LOCAL_DATA_DIR:-$REPO/data/competition}:/data:ro" -v "$WHEELS:$WHEELS:ro" -v "$W/models:$W/models:ro" \

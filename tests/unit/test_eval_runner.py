@@ -278,3 +278,15 @@ def test_gpu_memory_share_defaults_to_the_competition_value_unless_overridden():
 def test_tensor_parallel_follows_the_gpu_count_unless_overridden():
     assert [er.er_tp(n) for n in (1, 2, 3, 4)] == [1, 2, 2, 4]
     assert er.er_tp(4, 1) == 1  # a small model on Kaggle's four L4s
+
+
+def test_src_layout_workspace_gets_src_on_pythonpath(tmp_path):
+    (tmp_path / "src").mkdir()
+    got = er.er_with_src_path({"PYTHONPATH": str(tmp_path), "X": "1"})
+    assert got["PYTHONPATH"] == f"{tmp_path}:{tmp_path}/src"
+    assert got["X"] == "1"
+
+
+def test_flat_workspace_and_missing_pythonpath_are_left_alone(tmp_path):
+    assert er.er_with_src_path({"PYTHONPATH": str(tmp_path)}) == {"PYTHONPATH": str(tmp_path)}
+    assert er.er_with_src_path({}) == {}
