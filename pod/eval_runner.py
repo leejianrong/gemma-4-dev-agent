@@ -419,6 +419,32 @@ def er_dtype(major: int, bf16: bool, override: str | None) -> str:
     return "bfloat16" if bf16 else "auto"
 
 
+class ErExternalServer:
+    """An OpenAI-compatible endpoint that is not ours to start (ER_EXTERNAL_API_BASE), for example
+    semula answering with a teacher model. Same three members the runner uses from VllmServer."""
+
+    def __init__(self, base_url: str) -> None:
+        self.base_url = base_url
+
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
+
+    def create_model_registry(self, aliases, model_prefix="openai/", api_key="EMPTY"):
+        from adk_submission.registry import ModelRegistry
+        from google.adk.models.lite_llm import LiteLlm
+
+        reg = ModelRegistry()
+        for alias in aliases:
+            reg.register(
+                alias,
+                LiteLlm(model=f"{model_prefix}{alias}", api_base=self.base_url, api_key=api_key),
+            )
+        return reg
+
+
 def er_gpu_util(override: str | None) -> float:
     """vLLM's GPU memory share: 0.90 as in the competition, or ER_VLLM_GPU_UTIL for a shared GPU."""
     if not override:
@@ -496,8 +522,9 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
     )  # the official validator; raises on a bad submission
     er_log("official validate_directory: ok")
 
+    external = os.environ.get("ER_EXTERNAL_API_BASE", "")
     model_path = ER_MODEL_ROOT / model / "2"
-    if not model_path.exists():
+    if not external and not model_path.exists():
         raise SystemExit(
             f"ERROR model weights missing at {model_path}; attach the google/gemma-4 model"
         )
@@ -510,13 +537,17 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
     adapter_map = getattr(adapters, "adapters", None) or {}
     ranks = [r for i in adapter_map.values() if (r := getattr(i, "rank", None)) and r > 0]
     gpus = torch.cuda.device_count() if torch.cuda.is_available() else 1
-    if gpus < 1 or not torch.cuda.is_available():
+    if not external and (gpus < 1 or not torch.cuda.is_available()):
         raise SystemExit("ERROR no CUDA device visible")
-    tp = er_tp(gpus, p.get("tensor_parallel", 0))
-    dtype = er_dtype(
-        torch.cuda.get_device_capability(0)[0],
-        torch.cuda.is_bf16_supported(),
-        os.environ.get("ER_VLLM_DTYPE"),
+    tp = er_tp(gpus, p.get("tensor_parallel", 0)) if not external else 1
+    dtype = (
+        "auto"
+        if external
+        else er_dtype(
+            torch.cuda.get_device_capability(0)[0],
+            torch.cuda.is_bf16_supported(),
+            os.environ.get("ER_VLLM_DTYPE"),
+        )
     )
     er_log(f"STAGE start-vllm (t+{time.time() - t0:.0f}s) gpus={gpus} tp={tp} model={model}")
     extra = (
@@ -542,7 +573,7 @@ def er_main_impl(p: dict, files: dict[str, str], data: Path, outd: Path) -> dict
         startup_timeout=60 * 20,
         extra_args=extra,
     )
-    server = VllmServer(cfg, adapter_manifest=adapters)
+    server = ErExternalServer(external) if external else VllmServer(cfg, adapter_manifest=adapters)
     stop = threading.Event()
     threading.Thread(target=er_heartbeat, args=(state, t0, stop), daemon=True).start()
     try:
