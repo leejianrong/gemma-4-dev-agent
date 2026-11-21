@@ -24,8 +24,14 @@ semula parks each call --> scripts/teacher_worker.py (host) --> `claude -p --mod
 writing text and no edit (one hit the 28-call cap, one stopped early). **0 of 5 resolved**, but see A61: the local grader
 could not import the package in 3 of the 5 tasks, so the count says nothing about Haiku.
 
+## 30-task run (A63)
+
+14 of 30 resolved (47%), 28 of 30 patched, 1,945 s, concurrency 3. The instruction now says to edit and call
+`submit_patch` before any text. Open problem: some tasks fail with "Required test node did not pass" although every test
+in the log passes, so validate tasks by their required node, not only by "gold fixes a test".
+
 ## Next
 
-1. Fix or drop the repos the local grader cannot import (A61), then rerun on a larger S1/S3 slice.
+1. Validate tasks by required node (A63), then run the rest of S1/S3 for more trajectories.
 2. Keep only trajectories whose patch passes the hidden tests under the gate-validated environment.
 3. Convert semula's call log plus the harness trace into chat-format training data (not built yet).
