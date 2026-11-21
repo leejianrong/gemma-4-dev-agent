@@ -28,6 +28,8 @@ INSTRUCTION = (
     "Reply with ONE JSON object and nothing else. To call a tool: "
     '{"tool":"<name>","arguments":{...}} using only a listed tool and its schema. '
     'To end the session with text: {"text":"<message>"}. One tool call per reply. '
+    "Rules: always make a real source edit and call submit_patch before any text reply; "
+    "never end with text until submit_patch has succeeded or the call budget is spent. "
     "Never write tool-result text yourself."
 )
 FENCE = re.compile(r"^```(?:json)?\s*|\s*```$")
