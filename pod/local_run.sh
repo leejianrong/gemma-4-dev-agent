@@ -40,13 +40,17 @@ in_container() {
   local py
   py="$(readlink -f "$VENV/bin/python3")"
   py="$(dirname "${py%/bin/*}")"  # uv's python folder, which the venv links into (also by alias)
-  docker run --rm --name "gemma-$out" --gpus all --network none --cap-drop ALL --security-opt no-new-privileges \
+  # With ER_EXTERNAL_API_BASE (a model endpoint such as semula) there is no GPU, and the container joins
+  # LOCAL_GPU_NETWORK, an --internal docker network that holds only that endpoint.
+  local net=(--gpus all --network none)
+  [ -z "${ER_EXTERNAL_API_BASE:-}" ] || net=(--network "${LOCAL_GPU_NETWORK:?create an internal docker network}")
+  docker run --rm --name "gemma-$out" "${net[@]}" --cap-drop ALL --security-opt no-new-privileges \
     --pids-limit 4096 --memory "${LOCAL_GPU_MEM:-22g}" --shm-size 8g \
     --tmpfs /tmp:rw,exec,size=8g \
     --user "$(id -u):$(id -g)" -e HOME="$W/home" -e USER=gemma -e LOGNAME=gemma -e HF_HUB_OFFLINE=1 \
     -e PATH="$VENV/bin:/usr/local/bin:/usr/bin:/bin" \
     -e DATA_DIR=/data -e OUT_DIR=/out -e ER_WHEELHOUSE_DIR="$WHEELS" -e ER_MODEL_ROOT_DIR="$W/models" \
-    -e ER_VLLM_GPU_UTIL="${ER_VLLM_GPU_UTIL:-0.80}" \
+    -e ER_VLLM_GPU_UTIL="${ER_VLLM_GPU_UTIL:-0.80}" -e ER_EXTERNAL_API_BASE="${ER_EXTERNAL_API_BASE:-}" \
     -v "$VENV:$VENV" -v "$py:$py:ro" \
     -v "$REPO/pod:/repo/pod:ro" -v "$REPO/kaggle/eval_kernel:/repo/kernel:ro" \
     -v "${LOCAL_DATA_DIR:-$REPO/data/competition}:/data:ro" -v "$WHEELS:$WHEELS:ro" -v "$W/models:$W/models:ro" \
