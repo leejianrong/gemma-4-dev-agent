@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -40,9 +41,49 @@ def _failed(output: str) -> set[str]:
     }
 
 
-def _run_tests(ws: Path, tmp: Path, files: list[str], timeout: int) -> tuple[set[str], str] | str:
-    """Run the touched tests; return (failed ids, output tail) or a timeout message."""
-    cmd = [sys.executable, "-m", "pytest", *files, "-q", "-p", "no:cacheprovider", "-rfE"]
+def required_tests(test_patch: str) -> list[str]:
+    """Test functions the test patch adds: the harness requires each to pass (verification.py)."""
+    names = re.findall(r"^\+\s*(?:async\s+)?def\s+(test_\w+)\s*\(", test_patch, re.MULTILINE)
+    return list(dict.fromkeys(names))
+
+
+def _junit_problem(xml_text: str, required: list[str]) -> str | None:
+    """The harness's verdict on a JUnit report: any failure or error, or a required test that
+    did not pass, makes the task unresolvable. None when it would pass."""
+    try:
+        cases = ET.fromstring(xml_text).findall(".//testcase")
+    except ET.ParseError:
+        return "no readable JUnit report"
+    passed, other = set(), set()
+    for tc in cases:
+        name = tc.attrib.get("name", "").split("[", 1)[0]
+        bad = tc.find("failure") is not None or tc.find("error") is not None
+        (other if bad or tc.find("skipped") is not None else passed).add(name)
+        if bad:
+            return f"a failing test remains: {name}"
+    for req in required:
+        if req not in passed or req in other:
+            return f"required test did not pass: {req}"
+    return None
+
+
+def _run_tests(
+    ws: Path, tmp: Path, files: list[str], timeout: int
+) -> tuple[set[str], str, str] | str:
+    """Run the touched tests; return (failed ids, output tail, JUnit xml) or a timeout message."""
+    junit = tmp / "junit.xml"
+    junit.unlink(missing_ok=True)
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        *files,
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-rfE",
+        f"--junitxml={junit}",
+    ]
     # src-layout repos import from ws/src; with only ws on the path the installed copy wins
     roots = [str(ws)] + ([str(ws / "src")] if (ws / "src").is_dir() else [])
     env = {
@@ -55,14 +96,13 @@ def _run_tests(ws: Path, tmp: Path, files: list[str], timeout: int) -> tuple[set
     except subprocess.TimeoutExpired:
         return f"tests timed out after {timeout}s"
     out = res.stdout + res.stderr
-    return _failed(out), out[-400:]
+    xml = junit.read_text() if junit.exists() else ""
+    return _failed(out), out[-400:], xml
 
 
 def check(task: dict, snapshot: Path, timeout: int = 240) -> tuple[bool, str]:
-    """The gold patch must fix the touched tests: no failure it adds, at least one it removes.
-
-    Compared with the base state plus the test patch, so a test that fails for an unrelated
-    reason (a missing optional package) does not fail the gate.
+    """The gold patch must fix the touched tests: no failure it adds, at least one it removes, and
+    the harness would accept the result (no failure left in those files, every added test passes).
     """
     with tempfile.TemporaryDirectory() as t:
         tmp = Path(t)
@@ -85,6 +125,8 @@ def check(task: dict, snapshot: Path, timeout: int = 240) -> tuple[bool, str]:
         if new or not fixed:
             why = f"{len(new)} new failures" if new else "no test changed from failing to passing"
             return False, why + "\n" + after[1]
+        if problem := _junit_problem(after[2], required_tests(task["test_patch"])):
+            return False, problem + "\n" + after[1]
         return True, after[1]
 
 
