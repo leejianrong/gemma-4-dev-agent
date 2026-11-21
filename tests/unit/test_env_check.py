@@ -75,7 +75,8 @@ def test_src_layout_repos_import_from_the_snapshot(tmp_path):
     assert ok, tail
 
 
-def test_a_test_that_fails_before_and_after_does_not_fail_the_gate(tmp_path):
+def test_a_test_that_still_fails_after_the_gold_patch_fails_the_gate(tmp_path):
+    """The harness fails a task on any failure in the touched files, so nobody can resolve it."""
     snap = tmp_path / "s.tgz"
     _snapshot(snap)
     extra = TEST_PATCH.replace(
@@ -83,7 +84,19 @@ def test_a_test_that_fails_before_and_after_does_not_fail_the_gate(tmp_path):
     )
     extra = extra.replace("@@ -0,0 +1,4 @@", "@@ -0,0 +1,7 @@")
     ok, tail = env_check.check({"patch": GOOD, "test_patch": extra}, snap)
-    assert ok, tail
+    assert not ok and "failing test" in tail
+
+
+def test_a_required_test_that_is_skipped_fails_the_gate(tmp_path):
+    snap = tmp_path / "s.tgz"
+    _snapshot(snap)
+    both = TEST_PATCH.replace(
+        "+def test_add",
+        "+import pytest\n+\n+@pytest.mark.skip\n+def test_other():\n+    assert False\n+\n"
+        "+def test_add",
+    ).replace("@@ -0,0 +1,4 @@", "@@ -0,0 +1,10 @@")
+    ok, tail = env_check.check({"patch": GOOD, "test_patch": both}, snap)
+    assert not ok and "test_other" in tail
 
 
 def test_a_gold_patch_that_fixes_nothing_fails_even_if_nothing_regresses(tmp_path):
