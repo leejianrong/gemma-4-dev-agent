@@ -193,7 +193,7 @@ def submission_files() -> dict[str, str]:
     return {
         str(p.relative_to(root)): p.read_text(encoding="utf-8")
         for p in sorted(root.rglob("*"))
-        if p.is_file()
+        if p.is_file() and p.suffix != ".safetensors"  # binary: a local run mounts adapters instead
     }
 
 

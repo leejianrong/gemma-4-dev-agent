@@ -44,3 +44,22 @@ harness function signatures, close to but not the exact ones the model saw. Vali
 1. Validate tasks by required node (A63), then run the rest of S1/S3 for more trajectories.
 2. Keep only trajectories whose patch passes the hidden tests under the gate-validated environment.
 3. Convert semula's call log plus the harness trace into chat-format training data (not built yet).
+
+## First LoRA and its evaluation (2026-11-23)
+
+`scripts/lora_train.py` trains a LoRA on the E4B base from the records above (`pod/train_job.sh` queues it
+through pueue; `TRAIN_DATA` picks the data folder). The base is a compressed-tensors int4 checkpoint that
+PEFT cannot wrap, so the linears are replaced by layers that dequantise on the fly (packed weights saved,
+re-dequantised in backward) with float32 LoRA A and B. Targets: q, k, v, o, gate, up, down of the language
+model (258 layers, 34.9M parameters at rank 16). Loss only on assistant tokens, hidden states selected before
+`lm_head`. Peak 11.3 GB at the 9,000-token cap; a 12,288-token cap thrashed a 16 GB card.
+
+Evaluation: `experiments/bundles/e4b_lora1` is `e4b_v2` plus `adapter: main_lora` (local only: copy `e4b_v2`, add `adapters/main_lora/` from `~/gpu-work/out/RUN/adapter`; weights are never committed).
+Local runs mount the bundle's `adapters/` folder (`LOCAL_ADAPTERS_DIR`, `ER_ADAPTERS_DIR`) because the
+kernel embeds the submission as text. Result: A65, a regression, with three causes: argument rendering,
+thinking mode, and repeated failing commands. Two rules for any next adapter:
+
+- Render training text the way vLLM does (`template_view`: tool-call arguments as dicts) and check the
+  rendered call against a base-model call.
+- Train in the mode the bundle runs in. With thinking on, the turns need a thought channel; with
+  `thinking_budget: 0` they do not.

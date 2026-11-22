@@ -41,3 +41,4 @@ kaggle/writeup_notebook/kernel.py
 
 # agent worktrees
 .claude/worktrees/
+experiments/bundles/*/adapters/**/*.safetensors

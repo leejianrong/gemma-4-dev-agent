@@ -382,6 +382,8 @@ def er_write_submission(root: Path, files: dict[str, str], model: str) -> tuple[
                 )
                 y.write_text(re.sub(r"^\s*adapter:\s*.*\n?", "", t, flags=re.MULTILINE))
         shutil.rmtree(root / "adapters", ignore_errors=True)
+    elif os.environ.get("ER_ADAPTERS_DIR"):  # weights are binary: not embedded, mounted by local_run.sh
+        shutil.copytree(os.environ["ER_ADAPTERS_DIR"], root / "adapters", dirs_exist_ok=True)
     return root, model or declared_model
 
 
