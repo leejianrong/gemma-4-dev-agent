@@ -30,6 +30,15 @@ could not import the package in 3 of the 5 tasks, so the count says nothing abou
 `submit_patch` before any text. Open problem: some tasks fail with "Required test node did not pass" although every test
 in the log passes, so validate tasks by their required node, not only by "gold fixes a test".
 
+## Training data (built 2026-11-22)
+
+`PYTHONPATH=. python3 -m analysis.teacher_dataset OUT TOOLS_JSON RUN_DIR... --val-repo sqlparse` writes `train.jsonl` (local only,
+never git) and aggregate `stats.json`. 97 resolved trajectories, all kept: 55 clean and 42 repaired. Repair removes each
+text-only assistant turn that the harness answered with a "Please continue" nudge (Haiku wrapped a valid call in stray tags):
+73 turns. Filters: needs `submit_patch` and an edit, at most 28 calls, no call repeated 3 times in a row. Median 7 calls,
+first edit at call 4, about 5.7k tokens (longest about 17k, so everything fits 32k). The tool schemas are rebuilt from the
+harness function signatures, close to but not the exact ones the model saw. Validation repo: sqlparse (12 records).
+
 ## Next
 
 1. Validate tasks by required node (A63), then run the rest of S1/S3 for more trajectories.
