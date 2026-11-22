@@ -44,6 +44,9 @@ in_container() {
   # LOCAL_GPU_NETWORK, an --internal docker network that holds only that endpoint.
   local net=(--gpus all --network none)
   [ -z "${ER_EXTERNAL_API_BASE:-}" ] || net=(--network "${LOCAL_GPU_NETWORK:?create an internal docker network}")
+  # LOCAL_ADAPTERS_DIR (set by local_job.sh from the bundle) is mounted as the submission's adapters/
+  local adapters=()
+  [ -z "${LOCAL_ADAPTERS_DIR:-}" ] || adapters=(-v "$LOCAL_ADAPTERS_DIR:/adapters:ro" -e ER_ADAPTERS_DIR=/adapters)
   docker run --rm --name "gemma-$out" "${net[@]}" --cap-drop ALL --security-opt no-new-privileges \
     --pids-limit 4096 --memory "${LOCAL_GPU_MEM:-22g}" --shm-size 8g \
     --tmpfs /tmp:rw,exec,size=8g \
@@ -51,7 +54,7 @@ in_container() {
     -e PATH="$VENV/bin:/usr/local/bin:/usr/bin:/bin" \
     -e DATA_DIR=/data -e OUT_DIR=/out -e ER_WHEELHOUSE_DIR="$WHEELS" -e ER_MODEL_ROOT_DIR="$W/models" \
     -e ER_VLLM_GPU_UTIL="${ER_VLLM_GPU_UTIL:-0.80}" -e ER_EXTERNAL_API_BASE="${ER_EXTERNAL_API_BASE:-}" \
-    -e ER_SRC_LAYOUT="${ER_SRC_LAYOUT:-1}" \
+    -e ER_SRC_LAYOUT="${ER_SRC_LAYOUT:-1}" "${adapters[@]}" \
     -v "$VENV:$VENV" -v "$py:$py:ro" \
     -v "$REPO/pod:/repo/pod:ro" -v "$REPO/kaggle/eval_kernel:/repo/kernel:ro" \
     -v "${LOCAL_DATA_DIR:-$REPO/data/competition}:/data:ro" -v "$WHEELS:$WHEELS:ro" -v "$W/models:$W/models:ro" \

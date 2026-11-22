@@ -290,3 +290,26 @@ def test_src_layout_workspace_gets_src_on_pythonpath(tmp_path):
 def test_flat_workspace_and_missing_pythonpath_are_left_alone(tmp_path):
     assert er.er_with_src_path({"PYTHONPATH": str(tmp_path)}) == {"PYTHONPATH": str(tmp_path)}
     assert er.er_with_src_path({}) == {}
+
+
+def test_adapters_dir_is_copied_in_unless_the_model_is_rewritten(tmp_path, monkeypatch):
+    src = tmp_path / "ad" / "main_lora"
+    src.mkdir(parents=True)
+    (src / "adapter_model.safetensors").write_bytes(b"\xbb\x00")
+    monkeypatch.setenv("ER_ADAPTERS_DIR", str(tmp_path / "ad"))
+    files = {"agent.yaml": "name: a\nmodel: m\nadapter: main_lora\n"}
+    root, _ = er.er_write_submission(tmp_path / "s", files, "m")
+    assert (root / "adapters/main_lora/adapter_model.safetensors").read_bytes() == b"\xbb\x00"
+    root, _ = er.er_write_submission(tmp_path / "t", files, "other")
+    assert not (root / "adapters").exists()
+
+
+def test_kernel_does_not_embed_binary_adapter_weights(tmp_path, monkeypatch):
+    (tmp_path / "agent.yaml").write_text("name: a\n")
+    (tmp_path / "adapters").mkdir()
+    (tmp_path / "adapters/w.safetensors").write_bytes(b"\xbb\xff")
+    monkeypatch.setenv("SUBMISSION_DIR", str(tmp_path))
+    sys.path.insert(0, str(ROOT / "kaggle"))
+    import build_kernel as bk
+
+    assert list(bk.submission_files()) == ["agent.yaml"]

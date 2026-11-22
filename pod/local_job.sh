@@ -19,6 +19,7 @@ OUT="$HOME/gpu-work/out/$RUN_ID"
 python3 scripts/gpu_queue.py sample "$OUT/gpu_samples.csv" --container "gemma-$RUN_ID" &
 SAMPLER=$!
 trap 'kill $SAMPLER 2>/dev/null || true' EXIT
+[ ! -d "experiments/bundles/$BUNDLE/adapters" ] || export LOCAL_ADAPTERS_DIR="$PWD/experiments/bundles/$BUNDLE/adapters"
 pod/local_run.sh run "$RUN_ID" >"$OUT/container.log" 2>&1
 kill $SAMPLER 2>/dev/null || true
 # a run whose GPU ran out of free VRAM can stall (docs/GPU_RUNS.md section 16): flag it
