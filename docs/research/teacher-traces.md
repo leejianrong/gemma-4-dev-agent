@@ -63,3 +63,6 @@ thinking mode, and repeated failing commands. Two rules for any next adapter:
   rendered call against a base-model call.
 - Train in the mode the bundle runs in. With thinking on, the turns need a thought channel; with
   `thinking_budget: 0` they do not.
+
+`lora_train.py train --edit-only` puts loss only on `edit_file`, `write_file` and `submit_patch` turns. It
+made things worse (A66): the model edits blind at call 1. Both variants regress E4B, so no adapter ships.
