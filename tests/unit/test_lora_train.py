@@ -20,3 +20,21 @@ def test_tool_call_arguments_become_dicts_like_vllm_before_templating():
     assert out[0]["tool_calls"][0]["function"]["arguments"] == {"command": "ls"}
     assert out[1] == msgs[1]
     assert json.loads(call["function"]["arguments"]) == {"command": "ls"}  # input is untouched
+
+
+def _call(name):
+    return {"id": "c", "type": "function", "function": {"name": name, "arguments": "{}"}}
+
+
+def test_edit_only_loss_picks_edit_and_submit_turns():
+    msgs = [
+        {"role": "user", "content": "u"},
+        {"role": "assistant", "content": None, "tool_calls": [_call("run_command")]},
+        {"role": "tool", "content": "x"},
+        {"role": "assistant", "content": None, "tool_calls": [_call("edit_file")]},
+        {"role": "tool", "content": "x"},
+        {"role": "assistant", "content": None, "tool_calls": [_call("submit_patch")]},
+        {"role": "assistant", "content": "done"},
+    ]
+    assert lt.loss_turns(msgs, edit_only=True) == [3, 5]
+    assert lt.loss_turns(msgs, edit_only=False) == [1, 3, 5, 6]

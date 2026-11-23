@@ -5,7 +5,8 @@ Runs in ~/gpu-work/train-venv, never the vLLM venv. A GPU run goes through pueue
 (`python scripts/gpu_queue.py add ...`). Data is local and synthetic (rules 4b).
 
   lora_train.py check DATA_DIR MODEL_DIR            CPU: render records, report mask and lengths
-  lora_train.py train DATA_DIR MODEL_DIR OUT_DIR [--smoke] [--epochs N] [--rank R] [--lr X]
+  lora_train.py train DATA_DIR MODEL_DIR OUT_DIR [--smoke] [--edit-only] [--epochs N] [--rank R]
+                [--lr X]
 """
 
 from __future__ import annotations
@@ -56,7 +57,25 @@ def _text(tok, msgs, tools, gen: bool) -> str:
     )
 
 
-def build_example(tok, rec: dict) -> dict | None:
+EDIT_TOOLS = {"edit_file", "write_file", "submit_patch"}
+
+
+def loss_turns(msgs: list[dict], edit_only: bool) -> list[int]:
+    """Indices of the assistant turns that carry loss.
+
+    edit_only keeps just the edit and submit calls (A66: that made the model edit blind at call 1).
+    """
+    out = []
+    for i, m in enumerate(msgs):
+        if m["role"] != "assistant":
+            continue
+        names = {c["function"]["name"] for c in m.get("tool_calls") or []}
+        if not edit_only or (names and names <= EDIT_TOOLS):
+            out.append(i)
+    return out
+
+
+def build_example(tok, rec: dict, edit_only: bool = False) -> dict | None:
     """Token ids and labels for one record; labels are -100 everywhere but the assistant turns.
 
     Turn i is the text of messages[: i+1] after the text of messages[:i] plus the generation
@@ -65,9 +84,7 @@ def build_example(tok, rec: dict) -> dict | None:
     msgs, tools = rec["messages"], rec["tools"]
     full = _text(tok, msgs, tools, False)
     spans: list[tuple[int, int]] = []
-    for i, m in enumerate(msgs):
-        if m["role"] != "assistant":
-            continue
+    for i in loss_turns(msgs, edit_only):
         head = _text(tok, msgs[:i], tools, True)
         upto = _text(tok, msgs[: i + 1], tools, False)
         if not (upto.startswith(head) and full.startswith(upto)):
@@ -260,8 +277,9 @@ def train(argv: list[str]) -> int:
     flag = lambda n, d: type(d)(argv[argv.index(n) + 1]) if n in argv else d  # noqa: E731
     epochs, rank, lr = flag("--epochs", 2), flag("--rank", 16), flag("--lr", 1e-4)
     smoke = "--smoke" in argv
+    edit_only = "--edit-only" in argv
     tok = AutoTokenizer.from_pretrained(model_dir)
-    data = [e for r in load(data_dir, "train") if (e := build_example(tok, r))]
+    data = [e for r in load(data_dir, "train") if (e := build_example(tok, r, edit_only))]
     data = [d for d in data if len(d["input_ids"]) <= MAX_LEN]
     if smoke:
         data, epochs = sorted(data, key=lambda d: -len(d["input_ids"]))[:3], 1
@@ -296,7 +314,7 @@ def train(argv: list[str]) -> int:
             logits = softcap * torch.tanh(logits / softcap)
         return F.cross_entropy(logits, lab[keep])
 
-    val = [e for r in load(data_dir, "val") if (e := build_example(tok, r))]
+    val = [e for r in load(data_dir, "val") if (e := build_example(tok, r, edit_only))]
     val = [d for d in val if len(d["input_ids"]) <= MAX_LEN][: 2 if smoke else None]
 
     def evaluate(tag):
