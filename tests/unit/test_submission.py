@@ -101,3 +101,21 @@ def test_zip_bytes_do_not_depend_on_file_mtimes_or_build_time(tmp_path):
             os.utime(p, (1_000_000_000, 1_000_000_000))
     b = submission.build_zip(s, tmp_path / "b.zip").read_bytes()
     assert a == b
+
+
+def test_evaluation_block_on_a_non_llm_root_is_rejected(tmp_path):
+    # The harness (swegemma) rejects `evaluation` on a LoopAgent root (A69).
+    d = make(tmp_path / "s")
+    (d / "agent.yaml").write_text(
+        f"agent_class: LoopAgent\nname: l\nmodel: {MODEL}\nmax_iterations: 2\n"
+        "evaluation: {max_tool_calls: 28}\n"
+    )
+    assert any("evaluation" in e for e in submission.check(d))
+
+
+def test_evaluation_block_on_an_llm_root_passes(tmp_path):
+    d = make(tmp_path / "s")
+    (d / "agent.yaml").write_text(
+        f"name: coder\nmodel: {MODEL}\nevaluation: {{max_tool_calls: 28}}\n"
+    )
+    assert submission.check(d) == []

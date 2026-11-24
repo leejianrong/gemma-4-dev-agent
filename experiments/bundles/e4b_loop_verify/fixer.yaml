@@ -1,0 +1,10 @@
+name: fixer
+description: Locates the cause and edits the source. Never submits.
+instruction: !include prompts/system.md
+tools:
+  - run_command
+  - read_file
+  - edit_file
+  - write_file
+model: gemma-4-e4b-it-qat-w4a16-ct
+generate_content_config: !include configs/sampling.yaml

@@ -41,6 +41,12 @@ def check(root: Path) -> list[str]:
     if len(roots) != 1:
         errs.append(f"expected exactly one root config, found {roots or 'none'}")
 
+    for n in roots:
+        top = (root / n).read_text(encoding="utf-8")
+        cls = re.search(r"^agent_class:\s*(\S+)", top, re.MULTILINE)
+        if cls and cls.group(1) != "LlmAgent" and re.search(r"^evaluation:", top, re.MULTILINE):
+            errs.append(f"`evaluation` is rejected on a {cls.group(1)} root (A69)")
+
     total = 0
     models: set[str] = set()
     for p in sorted(root.rglob("*")):
