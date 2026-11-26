@@ -13,7 +13,10 @@ python3 -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version' ||
 
 "${PIP[@]}" torch==2.10.0 torchvision==0.25.0 torchaudio==2.10.0 litellm
 "${PIP[@]}" --find-links "$WHEELHOUSE" \
-  vllm==0.19.1 google-adk==1.36.1 swegemma==0.2.11 adk-submission==0.2.13 adk-eval-core==0.1.0
+  vllm==0.19.1 google-adk==1.36.1 swegemma==0.2.11 adk-submission==0.2.13 adk-eval-core==0.1.0 \
+  transformers==5.13.1 "huggingface-hub>=1.5.0,<2.0"
+# The two pins above: unpinned, pip picks transformers 5.24 and huggingface-hub 2.4, and vLLM then
+# fails to import (2026-11-26 pod run). Kaggle's image has transformers 5.13.1 from the wheelhouse.
 
 python3 - <<'PY'
 from importlib.metadata import version
@@ -22,6 +25,7 @@ names = ["torch", "torchvision", "torchaudio", "litellm", "vllm", "transformers"
          "swegemma", "adk-submission", "numpy"]
 print("RESOLVED " + " ".join(f"{n}={version(n)}" for n in names))
 import litellm, torch  # noqa: E401, F401
+from transformers import GenerationConfig  # noqa: F401  (runs transformers' dependency version check)
 from adk_submission import VllmServer  # noqa: F401
 from swegemma.evaluate import Evaluator  # noqa: F401
 
