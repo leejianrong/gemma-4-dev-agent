@@ -42,3 +42,6 @@ kaggle/writeup_notebook/kernel.py
 # agent worktrees
 .claude/worktrees/
 experiments/bundles/*/adapters/**/*.safetensors
+
+# Local-only LoRA eval bundle (adapter trained on task data; never commit, docs/research/teacher-traces.md)
+experiments/bundles/e4b_lora1/
