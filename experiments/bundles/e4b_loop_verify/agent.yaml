@@ -1,0 +1,14 @@
+# Rejected by the harness: `evaluation` is not allowed on a LoopAgent root (A69). Kept as a record.
+# Exploratory: LoopAgent of fixer + reviewer on the e4b_loopfix prompt. Based on the baseline agent adapted from flexonafft (see docs/ATTRIBUTION.md).
+agent_class: LoopAgent
+name: swe_loop
+description: Fix the issue, then review and submit.
+max_iterations: 3
+sub_agents:
+  - config_path: fixer.yaml
+  - config_path: reviewer.yaml
+evaluation:
+  timeout_seconds: 240
+  max_tool_calls: 28
+  max_time_minutes: 8
+  max_turns: 80

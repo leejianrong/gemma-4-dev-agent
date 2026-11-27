@@ -1,0 +1,11 @@
+name: reviewer
+description: Checks the diff and tests, fixes small problems, submits the patch.
+instruction: !include prompts/reviewer.md
+tools:
+  - run_command
+  - read_file
+  - edit_file
+  - submit_patch
+  - get_status
+model: gemma-4-e4b-it-qat-w4a16-ct
+generate_content_config: !include configs/sampling.yaml
