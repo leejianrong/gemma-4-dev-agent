@@ -51,8 +51,8 @@ traces on every new pod run (T3 could not finish its whitespace test for lack of
 
 - **RunPod spend.** Cap: 10 USD in total for this project; the account spend limit (80 USD) cannot be
   lowered and the account is shared with other projects. Our own jobs came to about 9.0 USD by
-  2026-11-12 (`docs/GPU_RUNS.md` sections 12 and 14, estimates). **The balance is exhausted** (0.52 USD
-  on 2026-11-13, confirmed by the owner 2026-11-14), so no more RunPod jobs. GPU work moves to a machine
+  2026-11-12 (`docs/GPU_RUNS.md` sections 12 and 14, estimates). The balance was 0.52 USD on 2026-11-13; by 2026-11-27 it was about 18.67 USD (credit added; nothing is running).
+  The project cap is still spent, so no RunPod job without the owner approving that specific job (31B only). GPU work moves to a machine
   with a local GPU. A previous auto-memory note held this state; it does not travel.
 - **Local GPU.** This machine has an RTX 3080 Ti Laptop (16 GB). `pod/local_run.sh` (setup, gate, run) runs the
   eval kernel in a container; recipe and pitfalls in `docs/GPU_RUNS.md` section 15. E4B and E2B fit

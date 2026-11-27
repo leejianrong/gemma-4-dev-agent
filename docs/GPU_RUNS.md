@@ -29,7 +29,7 @@ looked it up or ran it, **[guess]** an estimate that a real attempt must confirm
   and then: a failed `pod list` means "unknown", never "pod gone". The job's own "no progress" warning
   fires during healthy evals; trust the kernel's `HEARTBEAT` line.
 - **Spend** is tracked in `docs/LOCAL_STATE.md` and the per-job figures below. About 9.0 USD of the
-  10 USD cap was used by 2026-11-12 (estimate); the account balance was 0.52 USD on 2026-11-13.
+  10 USD cap was used by 2026-11-12 (estimate); the account balance was 0.52 USD on 2026-11-13 (about 18.67 USD on 2026-11-27 after new credit; see section 17).
 - **Kaggle instead:** L4x4 notebooks use the weekly GPU quota at twice the rate (about 15 h a week, so
   about five 36-task runs); a replicate takes about 2.9 h there. Same hardware as the leaderboard.
 - **Colab T4:** not tried; see section 11.
@@ -508,3 +508,24 @@ normally. The cause is not proven (a guess: Windows pages GPU memory when the ca
 - **pueue orders jobs from sessions that use it; it cannot stop a program that uses the GPU directly.** Other
   sessions on this machine were told about the queue (2026-11-15). `ollama serve` runs here and loads models on
   request. The samples show when something else was on the GPU.
+
+## 17. 31B timing run attempt, abandoned (2026-11-26/27)
+
+Goal: time 12 dev tasks of `b31_cfg3_28` on one GPU. Three pods were created and terminated; none is running; no spend
+beyond the balance move (about 18.67 USD left). Not retried. Findings:
+
+- **REST v1 (`rest.runpod.io/v1`) is retired.** v2 is `https://api.runpod.io/v2` (bearer auth, `POST /v2/pods` with a nested
+  body, `DELETE /v2/pods/{id}`). A patched copy of the wrapper is in `~/gpu-work/rp2/` (outside git). The global
+  `runpod-jobs` skill and `pod/pod_cmd.py` still target v1.
+- **`runpodctl send/receive` is too slow:** the relay ran at 0.4-0.6 MB/s, so 7.8 GiB would take hours. This laptop uploads
+  at about 20 MB/s.
+- **Kaggle download of the 415 files stalled at about 282** (a 429 is suspected; `dl.log` was not printed, so unconfirmed).
+- **Unpinned pip breaks vLLM 0.19.1:** it resolved transformers 5.24.1 and huggingface-hub 2.4.0. Branch
+  `gpu-setup-hf-pin` pins transformers==5.13.1 and huggingface-hub<2.0 in `pod/gpu_setup.sh` and checks the import; **the pins
+  are unvalidated** until a pod run reaches the eval stage.
+- **No SSH on the cheap cards:** secure-cloud L40S and RTX 6000 Ada pods got no public IP or port mapping. Those cards exist
+  only in OC-AU-1, which has no S3 API for network volumes. The 15 S3-capable datacenters had only RTX PRO 6000, A100 and
+  B200, all Low stock.
+- **The eval reads only** `tasks.jsonl`, the 124 wheels (27 MiB) and the 36 snapshots (6.97 GiB); graphs and embeddings are
+  not needed.
+- If retried: 12 dev tasks via the Kaggle download (about 140 files), and have `pod/job.sh` print `dl.log` on the first failure.
